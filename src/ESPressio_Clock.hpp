@@ -1,6 +1,6 @@
 #pragma once
 
-// Compatibility header retained for existing System consumers.
-// New code should include ESPressio_SystemClock.hpp explicitly to avoid the
-// historical name collision with ESPressio-Timing's ESPressio_Clock.hpp.
+// Historical compatibility header retained for existing System consumers.
+// New System/platform code should include ESPressio_SystemPlatformClock.hpp
+// explicitly. Timing-domain code should include ESPressio_TimingSystemClock.hpp.
 #include "ESPressio_SystemClock.hpp"
