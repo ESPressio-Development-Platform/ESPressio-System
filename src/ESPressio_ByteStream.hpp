@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include "ESPressio_Platform.hpp"
 
@@ -30,6 +31,26 @@ public:
     PlatformResult WriteByte(uint8_t value) noexcept {
         std::size_t written = 0;
         return Write(&value, 1, written);
+    }
+
+    PlatformResult WriteText(const char* text) noexcept {
+        if (text == nullptr) {
+            return PlatformResult::Failed(PlatformStatus::InvalidArgument);
+        }
+        std::size_t written = 0;
+        return Write(
+            reinterpret_cast<const uint8_t*>(text),
+            std::strlen(text),
+            written
+        );
+    }
+
+    PlatformResult WriteLine(const char* text = nullptr) noexcept {
+        if (text != nullptr) {
+            const auto textResult = WriteText(text);
+            if (!textResult) return textResult;
+        }
+        return WriteText("\r\n");
     }
 };
 
