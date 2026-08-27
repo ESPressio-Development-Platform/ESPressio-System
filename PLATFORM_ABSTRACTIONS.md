@@ -33,9 +33,19 @@ This file records changes made during the platform-abstraction tranche tracked b
 - Added explicit enable/disable lifecycle operations and provider capability reporting for interrupts and interrupt affinity.
 - Refined interrupt creation to return both `PlatformResult` and the owned handle so unsupported/conflicting affinity is observable rather than reduced to a null handle.
 
+### Entropy
+- Added `System::Entropy::IEntropySource` for hardware/platform entropy without exposing target RNG APIs.
+- Entropy sources declare whether they are suitable for cryptographic use, allowing Security to reject inappropriate fallback/random implementations.
+- The default/null source reports unavailable rather than silently substituting a weak pseudo-random generator.
+
+### Byte I/O
+- Added `System::IO::IByteInput`, `IByteOutput` and `IByteStream` for raw byte-oriented device/framework streams.
+- Added small text/line convenience operations on `IByteOutput` so developer-facing libraries can preserve formatted console/log output without depending on Arduino `Print`.
+- The abstraction intentionally does not model serial framing, console parsing or logging policy; those remain domain concerns.
+
 ### Umbrella API
-- Updated `ESPressio_System.hpp` to expose the new platform abstraction surface alongside memory policies.
+- Updated `ESPressio_System.hpp` to expose execution, synchronization, queues, clocking, GPIO, entropy and byte-I/O alongside memory policies.
 
 ## Boundary rule
 
-ESPressio-System defines hardware/runtime capabilities in ESPressio vocabulary. Domain-specific concepts such as WiFi lifecycle, ESP-NOW behaviour, event dispatch or command routing remain owned by their domain libraries. Concrete target implementations belong in platform libraries such as ESPressio-ESP32.
+ESPressio-System defines generic hardware/runtime capabilities in ESPressio vocabulary. Domain-specific concepts such as WiFi lifecycle, persistence semantics, ESP-NOW behaviour, event dispatch, socket protocols or command routing remain owned by their domain libraries. Concrete target implementations belong in platform libraries such as ESPressio-ESP32.
