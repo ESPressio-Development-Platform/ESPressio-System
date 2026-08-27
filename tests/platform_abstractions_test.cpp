@@ -43,6 +43,8 @@ public:
         ESPressio::System::Execution::ExecutionHandle
     ) const noexcept override { return 2048; }
 
+    uint32_t ProcessorCount() const noexcept override { return 2; }
+
     void SleepMilliseconds(uint32_t) override {}
     void Yield() override {}
     bool SupportsProcessorAffinity() const noexcept override { return true; }
@@ -69,6 +71,7 @@ int main() {
     assert(created);
     assert(created.Handle == 42);
     assert(Execution::Provider().MinimumFreeStackBytes(created.Handle) == 2048);
+    assert(Execution::Provider().ProcessorCount() == 2);
 
     const auto now = Clock::Monotonic().NowNanoseconds();
     const auto later = Clock::Monotonic().NowNanoseconds();
@@ -83,6 +86,7 @@ int main() {
 
     Execution::ResetProvider();
     assert(!Execution::Provider().SupportsProcessorAffinity());
+    assert(Execution::Provider().ProcessorCount() == 1);
 
     return 0;
 }
