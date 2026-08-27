@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 #include "ESPressio_Platform.hpp"
 
@@ -65,6 +66,29 @@ public:
 
 using InterruptHandle = std::unique_ptr<IInterrupt>;
 
+struct InterruptCreationResult {
+    PlatformResult Result = PlatformResult::Failed(PlatformStatus::Unavailable);
+    InterruptHandle Handle;
+
+    InterruptCreationResult() = default;
+
+    InterruptCreationResult(
+        PlatformResult result,
+        InterruptHandle handle = nullptr
+    )
+        : Result(result),
+          Handle(std::move(handle)) {}
+
+    InterruptCreationResult(InterruptCreationResult&&) noexcept = default;
+    InterruptCreationResult& operator=(InterruptCreationResult&&) noexcept = default;
+    InterruptCreationResult(const InterruptCreationResult&) = delete;
+    InterruptCreationResult& operator=(const InterruptCreationResult&) = delete;
+
+    explicit operator bool() const noexcept {
+        return static_cast<bool>(Result) && Handle != nullptr;
+    }
+};
+
 class IController {
 public:
     virtual ~IController() = default;
@@ -77,7 +101,7 @@ public:
     virtual PlatformResult Write(Pin pin, State state) noexcept = 0;
     virtual PlatformResult Read(Pin pin, State& state) const noexcept = 0;
 
-    virtual InterruptHandle CreateInterrupt(
+    virtual InterruptCreationResult CreateInterrupt(
         Pin pin,
         const InterruptConfiguration& configuration,
         InterruptCallback callback,
