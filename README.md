@@ -4,7 +4,7 @@ Platform-neutral hardware and runtime concepts expressed in the language of the 
 
 **Release target:** `0.1.0`
 
-ESPressio System is the hardware/runtime abstraction boundary at the base of the ESPressio dependency graph. Higher-level libraries can express requirements such as memory policy, execution, clocking, synchronization and GPIO without depending directly on ESP32, ESP-IDF, Arduino, FreeRTOS or another target implementation.
+ESPressio System is the hardware/runtime abstraction boundary at the base of the ESPressio dependency graph. Higher-level libraries can express requirements such as memory policy, execution, clocking, synchronization, bounded queues and GPIO without depending directly on ESP32, ESP-IDF, Arduino, FreeRTOS or another target implementation.
 
 System deliberately does **not** own higher-level domain concepts such as WiFi lifecycle, ESP-NOW transport, event dispatch or command routing. Those abstractions remain with their respective libraries. Concrete target implementations belong in platform libraries such as `ESPressio-ESP32`.
 
@@ -68,6 +68,7 @@ The contract covers:
 - suspend and resume;
 - current execution identity;
 - stack high-water/free-stack telemetry;
+- processor-count discovery;
 - sleep and yield;
 - optional processor affinity.
 
@@ -79,6 +80,8 @@ A platform implementation installs an `IExecutionProvider` with:
 System::Execution::SetProvider(&provider);
 ```
 
+The provider reports `ProcessorCount()` separately from `SupportsProcessorAffinity()`: a platform may expose multiple processors while still being unable to guarantee the requested execution-placement semantics.
+
 ## Synchronization signals
 
 `ESPressio_Synchronization.hpp` exposes a binary `ISignal` suitable for lifecycle handshakes and callback/interrupt-to-task signalling.
@@ -88,6 +91,23 @@ auto signal = ESPressio::System::Synchronization::CreateBinarySignal();
 ```
 
 Signals support ordinary signalling, interrupt-context signalling, timeout-aware waiting and reset. Native semaphore/event types remain inside the platform implementation.
+
+## Bounded message queues
+
+`ESPressio_Queue.hpp` exposes a fixed-element bounded queue abstraction for cross-execution-context message passing.
+
+```cpp
+auto queue = ESPressio::System::Queue::Create<MyMessage>(8);
+```
+
+The queue supports:
+
+- timeout-aware `Send()` and `Receive()`;
+- non-blocking operation with a zero timeout;
+- `SendFromInterrupt()` for ISR/callback producers;
+- reset, capacity and current-size inspection.
+
+The queue intentionally works in terms of fixed element size and copied message values. Higher-level ownership/move semantics remain the responsibility of the consuming domain rather than being hidden behind an RTOS-specific queue contract.
 
 ## Monotonic clocks and high-resolution counters
 
@@ -128,20 +148,26 @@ if (gpio != nullptr) {
 
 ### Interrupt lifecycle
 
-Interrupt creation returns a move-only RAII handle:
+Interrupt creation returns an explicit status together with a move-only RAII handle:
 
 ```cpp
-auto interrupt = gpio->CreateInterrupt(
+auto created = gpio->CreateInterrupt(
     26,
     {InterruptTrigger::RisingEdge, ProcessorAffinity::Any(), true},
     callback,
     context
 );
+
+if (created) {
+    auto interrupt = std::move(created.Handle);
+    // interrupt->Disable();
+    // interrupt->Enable();
+}
 ```
 
 The handle owns the registration. Destroying/resetting the handle detaches and destroys the interrupt through the concrete provider. `Enable()` and `Disable()` allow the registration to remain owned while temporarily inactive.
 
-Specific processor affinity is a request, not a universal guarantee. Providers expose `SupportsInterruptAffinity()` and may return `Unsupported` or `Conflict` when a requested affinity cannot be satisfied.
+Specific processor affinity is a request, not a universal guarantee. Providers expose `SupportsInterruptAffinity()` and may return `Unsupported` or `Conflict` when a requested affinity cannot be satisfied. Returning `InterruptCreationResult` ensures those causes are not collapsed into an unexplained null handle.
 
 ## Provider ownership rule
 
@@ -149,7 +175,7 @@ System owns abstractions for hardware/runtime capabilities that make sense indep
 
 For example:
 
-- memory, clocks, GPIO and primitive execution belong in System;
+- memory, clocks, GPIO, primitive execution, synchronization and bounded queues belong in System;
 - `IWiFiPlatform` belongs in ESPressio-WiFi;
 - ESP32 implementations of both System and WiFi contracts belong in ESPressio-ESP32.
 
@@ -175,6 +201,6 @@ After the coordinated release is published, applications should use the released
 
 ## Auditing and testing
 
-`PLATFORM_ABSTRACTIONS.md` records the platform-abstraction tranche chronologically. Existing host regression coverage continues to validate memory-provider behaviour; new platform contracts are intentionally suitable for host/mock providers as downstream migrations proceed.
+`PLATFORM_ABSTRACTIONS.md` records the platform-abstraction tranche chronologically. Host regression coverage validates memory-provider behaviour and the portable platform contracts; provider-specific repositories validate the target implementations.
 
 See `OPTIMISATIONS.md` for the chronological memory-policy implementation history and `CHANGELOG.md` for release-facing changes.
