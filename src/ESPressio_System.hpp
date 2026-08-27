@@ -8,3 +8,4 @@
 #include "ESPressio_Clock.hpp"
 #include "ESPressio_GPIO.hpp"
 #include "ESPressio_Entropy.hpp"
+#include "ESPressio_ByteStream.hpp"
