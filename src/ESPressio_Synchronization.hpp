@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -52,19 +53,26 @@ class DeferredBinarySignal final : public ISignal {
 private:
     bool _initiallySet = false;
     std::unique_ptr<ISignal> _signal;
+    std::atomic<ISignal*> _resolved{nullptr};
     std::mutex _mutex;
 
     ISignal* Resolve() noexcept {
-        if (_signal != nullptr) return _signal.get();
+        auto* resolved = _resolved.load(std::memory_order_acquire);
+        if (resolved != nullptr) return resolved;
 
         std::lock_guard<std::mutex> lock(_mutex);
-        if (_signal != nullptr) return _signal.get();
+        resolved = _resolved.load(std::memory_order_relaxed);
+        if (resolved != nullptr) return resolved;
 
         auto* provider = Provider();
         if (provider == nullptr) return nullptr;
 
         _signal = provider->CreateBinarySignal(_initiallySet);
-        return _signal.get();
+        resolved = _signal.get();
+        if (resolved != nullptr) {
+            _resolved.store(resolved, std::memory_order_release);
+        }
+        return resolved;
     }
 
 public:
@@ -79,7 +87,7 @@ public:
     }
 
     PlatformResult GiveFromInterrupt() noexcept override {
-        auto* signal = _signal.get();
+        auto* signal = _resolved.load(std::memory_order_acquire);
         return signal != nullptr
             ? signal->GiveFromInterrupt()
             : PlatformResult::Failed(PlatformStatus::Unavailable);
