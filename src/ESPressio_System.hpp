@@ -7,3 +7,4 @@
 #include "ESPressio_Queue.hpp"
 #include "ESPressio_Clock.hpp"
 #include "ESPressio_GPIO.hpp"
+#include "ESPressio_Entropy.hpp"
