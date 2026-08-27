@@ -18,6 +18,9 @@ This file records changes made during the platform-abstraction tranche tracked b
 ### Synchronization
 - Added a binary `ISignal` abstraction suitable for task lifecycle coordination.
 - The contract supports normal and interrupt-context signalling without exposing an RTOS semaphore type.
+- Hardware Lab validation exposed a static-initialization ordering hazard: globally constructed ESPressio objects could request signals before the concrete platform provider was installed and permanently receive `nullptr`. `CreateBinarySignal()` now returns a deferred signal when necessary; the signal binds to the installed provider on first normal-context use. This preserves platform ownership while allowing global ESPressio objects to be constructed safely before application bootstrap.
+- Deferred signals intentionally do not allocate/materialize from interrupt context. `GiveFromInterrupt()` succeeds only after the signal has already been resolved from normal execution context.
+- Added regression coverage that constructs a signal before provider installation, installs the provider later, and verifies the same signal then functions correctly.
 
 ### Bounded queues
 - Added a fixed-element `IMessageQueue` abstraction with bounded capacity, timeout-aware send/receive, reset and queue depth reporting.
