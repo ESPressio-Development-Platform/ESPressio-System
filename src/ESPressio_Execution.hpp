@@ -22,8 +22,18 @@ struct ExecutionConfiguration {
 };
 
 struct ExecutionCreationResult {
-    PlatformResult Result = PlatformResult::Failed(PlatformStatus::Unavailable);
-    ExecutionHandle Handle = InvalidExecutionHandle;
+    PlatformResult Result;
+    ExecutionHandle Handle;
+
+    ExecutionCreationResult() noexcept
+        : Result(PlatformResult::Failed(PlatformStatus::Unavailable)),
+          Handle(InvalidExecutionHandle) {}
+
+    ExecutionCreationResult(
+        PlatformResult result,
+        ExecutionHandle handle
+    ) noexcept
+        : Result(result), Handle(handle) {}
 
     explicit operator bool() const noexcept {
         return static_cast<bool>(Result) && Handle != InvalidExecutionHandle;
@@ -61,10 +71,10 @@ public:
         void*,
         const ExecutionConfiguration&
     ) override {
-        return {
+        return ExecutionCreationResult(
             PlatformResult::Failed(PlatformStatus::Unavailable),
             InvalidExecutionHandle
-        };
+        );
     }
 
     PlatformResult Destroy(ExecutionHandle) override {
