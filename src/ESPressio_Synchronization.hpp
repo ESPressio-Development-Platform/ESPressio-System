@@ -48,6 +48,10 @@ inline void ResetProvider() noexcept {
     ProviderStorage() = nullptr;
 }
 
+// A signal may be constructed before the concrete platform provider is
+// installed (for example by a globally constructed ESPressio Thread). The
+// deferred wrapper binds to the installed provider on first normal-context
+// use, avoiding any dependency on static initialization order.
 class DeferredBinarySignal final : public ISignal {
 private:
     bool _initiallySet = false;
