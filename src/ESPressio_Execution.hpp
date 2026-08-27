@@ -46,6 +46,7 @@ public:
 
     virtual ExecutionHandle Current() const noexcept = 0;
     virtual uint32_t MinimumFreeStackBytes(ExecutionHandle handle) const noexcept = 0;
+    virtual uint32_t ProcessorCount() const noexcept = 0;
 
     virtual void SleepMilliseconds(uint32_t milliseconds) = 0;
     virtual void Yield() = 0;
@@ -84,6 +85,10 @@ public:
 
     uint32_t MinimumFreeStackBytes(ExecutionHandle) const noexcept override {
         return 0;
+    }
+
+    uint32_t ProcessorCount() const noexcept override {
+        return 1;
     }
 
     void SleepMilliseconds(uint32_t) override {}
