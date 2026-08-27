@@ -7,11 +7,13 @@ This file records changes made during the platform-abstraction tranche tracked b
 ### Platform vocabulary
 - Added `PlatformStatus` and `PlatformResult` so higher-level libraries can report platform failures without exposing native SDK result types.
 - Added `ProcessorAffinity`, representing either any processor or a requested specific processor/core without assuming affinity support on every target.
+- Added explicit constexpr constructors to portable platform value/result types after Arduino-ESP32's GCC 8.4 toolchain exposed incompatibility with brace-based aggregate construction. This preserves the C++17 baseline across both current host compilers and the supported embedded toolchain.
 
 ### Execution
 - Added the `System::Execution` provider contract for execution creation, destruction, suspension, resumption, current-execution identity, stack telemetry, sleeping and yielding.
 - Added a portable processor-count query so higher-level scheduling code does not inspect RTOS core-count macros.
 - Execution handles are opaque ESPressio values rather than native RTOS handles.
+- `ExecutionCreationResult` uses an explicit portable constructor so null-provider and concrete-provider results compile consistently on ESP32 GCC.
 
 ### Synchronization
 - Added a binary `ISignal` abstraction suitable for task lifecycle coordination.
