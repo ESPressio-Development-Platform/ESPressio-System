@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstdint>
+#include <memory>
 
 #include <ESPressio_System.hpp>
 
@@ -50,6 +51,51 @@ public:
     bool SupportsProcessorAffinity() const noexcept override { return true; }
 };
 
+class TestSignal final : public ESPressio::System::Synchronization::ISignal {
+private:
+    bool _set = false;
+
+public:
+    explicit TestSignal(bool initiallySet) : _set(initiallySet) {}
+
+    ESPressio::System::PlatformResult Give() noexcept override {
+        _set = true;
+        return ESPressio::System::PlatformResult::Succeeded();
+    }
+
+    ESPressio::System::PlatformResult GiveFromInterrupt() noexcept override {
+        _set = true;
+        return ESPressio::System::PlatformResult::Succeeded();
+    }
+
+    ESPressio::System::PlatformResult Wait(uint32_t) noexcept override {
+        if (!_set) {
+            return ESPressio::System::PlatformResult::Failed(
+                ESPressio::System::PlatformStatus::Timeout
+            );
+        }
+        _set = false;
+        return ESPressio::System::PlatformResult::Succeeded();
+    }
+
+    ESPressio::System::PlatformResult Reset() noexcept override {
+        _set = false;
+        return ESPressio::System::PlatformResult::Succeeded();
+    }
+};
+
+class TestSynchronizationProvider final
+    : public ESPressio::System::Synchronization::ISynchronizationProvider {
+public:
+    uint32_t Created = 0;
+
+    std::unique_ptr<ESPressio::System::Synchronization::ISignal>
+    CreateBinarySignal(bool initiallySet = false) override {
+        ++Created;
+        return std::make_unique<TestSignal>(initiallySet);
+    }
+};
+
 void Entry(void*) {}
 
 }
@@ -83,6 +129,22 @@ int main() {
     );
     assert(!unsupported);
     assert(unsupported.Result.Status == PlatformStatus::Unsupported);
+
+    // Reproduce the static-construction ordering used by globally constructed
+    // Threads: create the signal before a concrete provider exists, then bind
+    // and use it after the platform provider is installed.
+    Synchronization::ResetProvider();
+    auto deferredSignal = Synchronization::CreateBinarySignal();
+    assert(deferredSignal != nullptr);
+
+    TestSynchronizationProvider synchronization;
+    Synchronization::SetProvider(&synchronization);
+    assert(deferredSignal->Reset());
+    assert(synchronization.Created == 1);
+    assert(deferredSignal->Give());
+    assert(deferredSignal->Wait(0));
+    assert(synchronization.Created == 1);
+    Synchronization::ResetProvider();
 
     Execution::ResetProvider();
     assert(!Execution::Provider().SupportsProcessorAffinity());
