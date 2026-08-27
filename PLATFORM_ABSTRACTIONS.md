@@ -10,11 +10,16 @@ This file records changes made during the platform-abstraction tranche tracked b
 
 ### Execution
 - Added the `System::Execution` provider contract for execution creation, destruction, suspension, resumption, current-execution identity, stack telemetry, sleeping and yielding.
+- Added a portable processor-count query so higher-level scheduling code does not inspect RTOS core-count macros.
 - Execution handles are opaque ESPressio values rather than native RTOS handles.
 
 ### Synchronization
 - Added a binary `ISignal` abstraction suitable for task lifecycle coordination.
 - The contract supports normal and interrupt-context signalling without exposing an RTOS semaphore type.
+
+### Bounded queues
+- Added a fixed-element `IMessageQueue` abstraction with bounded capacity, timeout-aware send/receive, reset and queue depth reporting.
+- Added explicit interrupt-context sending so callback/ISR producers do not need to expose a native RTOS queue API.
 
 ### Clocking
 - Added a platform-neutral monotonic clock contract with a portable `std::chrono::steady_clock` fallback.
@@ -26,6 +31,7 @@ This file records changes made during the platform-abstraction tranche tracked b
 - Added `InterruptConfiguration` with optional processor affinity.
 - Added a move-only RAII `InterruptHandle`; destroying the handle destroys/detaches the registered interrupt through the concrete provider.
 - Added explicit enable/disable lifecycle operations and provider capability reporting for interrupts and interrupt affinity.
+- Refined interrupt creation to return both `PlatformResult` and the owned handle so unsupported/conflicting affinity is observable rather than reduced to a null handle.
 
 ### Umbrella API
 - Updated `ESPressio_System.hpp` to expose the new platform abstraction surface alongside memory policies.
