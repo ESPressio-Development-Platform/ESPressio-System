@@ -26,6 +26,8 @@ This file records changes made during the platform-abstraction tranche tracked b
 ### Clocking
 - Added a platform-neutral monotonic clock contract with a portable `std::chrono::steady_clock` fallback.
 - Added a high-resolution counter/provider contract for hardware-counter facilities such as ESP32 GPTimer without naming or exposing the underlying implementation.
+- Added `ESPressio_SystemClock.hpp` as the canonical System clock-contract header after coordinated PlatformIO validation exposed a package-level name collision with ESPressio-Timing's historical `ESPressio_Clock.hpp`.
+- Retained System's `ESPressio_Clock.hpp` as a compatibility forwarding header; migrated code should include `ESPressio_SystemClock.hpp` explicitly.
 
 ### GPIO and interrupts
 - Added ESPressio-native GPIO pin, state, direction and pull concepts.
@@ -47,6 +49,7 @@ This file records changes made during the platform-abstraction tranche tracked b
 
 ### Umbrella API
 - Updated `ESPressio_System.hpp` to expose execution, synchronization, queues, clocking, GPIO, entropy and byte-I/O alongside memory policies.
+- The umbrella uses the canonical `ESPressio_SystemClock.hpp` include to remain unambiguous in dependency graphs that also contain ESPressio-Timing.
 
 ## Boundary rule
 
