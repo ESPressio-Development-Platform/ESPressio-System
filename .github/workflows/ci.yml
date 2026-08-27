@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'optimisation/**'
+  pull_request:
+
+jobs:
+  host-memory-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build memory-policy regression
+        run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/memory_policy_test.cpp -o memory_policy_test
+      - name: Run memory-policy regression
+        run: ./memory_policy_test
