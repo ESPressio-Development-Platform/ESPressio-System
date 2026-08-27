@@ -83,9 +83,6 @@ public:
     }
 
     PlatformResult GiveFromInterrupt() noexcept override {
-        // Provider-backed objects may allocate during first materialization,
-        // which is not safe from interrupt context. A signal intended for ISR
-        // use must therefore have been resolved earlier from normal context.
         auto* signal = _signal.get();
         return signal != nullptr
             ? signal->GiveFromInterrupt()
