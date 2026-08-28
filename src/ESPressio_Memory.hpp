@@ -15,6 +15,7 @@
 
 namespace ESPressio::System::Memory {
 
+/// <summary>Specifies the memory region preference or requirement for an allocation.</summary>
 enum class MemoryPolicy : unsigned char {
     Automatic = 0,
     Internal,
@@ -22,14 +23,26 @@ enum class MemoryPolicy : unsigned char {
     ExternalRequired
 };
 
+/// <summary>Abstracts policy-aware allocation and deallocation supplied by the active platform.</summary>
 class IMemoryProvider {
 public:
     virtual ~IMemoryProvider() = default;
+
+    /// <summary>Allocates a block using the requested size, alignment, and memory policy.</summary>
+    /// <param name="bytes">Number of bytes to allocate.</param>
+    /// <param name="alignment">Required byte alignment.</param>
+    /// <param name="policy">Memory placement policy for the allocation.</param>
+    /// <returns>A pointer to the allocated block.</returns>
     virtual void* Allocate(std::size_t bytes, std::size_t alignment, MemoryPolicy policy) = 0;
+
+    /// <summary>Releases a block previously allocated by this provider.</summary>
     virtual void Deallocate(void* pointer, std::size_t bytes, std::size_t alignment, MemoryPolicy policy) noexcept = 0;
+
+    /// <summary>Indicates whether the provider can satisfy the supplied memory policy.</summary>
     virtual bool Supports(MemoryPolicy policy) const noexcept = 0;
 };
 
+/// <summary>Portable fallback provider backed by the standard C++ allocation operators.</summary>
 class DefaultMemoryProvider final : public IMemoryProvider {
 public:
     void* Allocate(std::size_t bytes, std::size_t alignment, MemoryPolicy) override {
@@ -53,6 +66,7 @@ public:
     bool Supports(MemoryPolicy) const noexcept override { return true; }
 };
 
+/// <summary>Gets the portable fallback memory provider.</summary>
 inline IMemoryProvider& DefaultProvider() {
     static DefaultMemoryProvider provider;
     return provider;
@@ -63,18 +77,26 @@ inline std::atomic<IMemoryProvider*>& ProviderSlot() {
     return provider;
 }
 
+/// <summary>Gets the currently installed process-wide memory provider.</summary>
 inline IMemoryProvider& GetProvider() noexcept {
     auto* provider = ProviderSlot().load(std::memory_order_acquire);
     return provider ? *provider : DefaultProvider();
 }
 
+/// <summary>Atomically installs a process-wide memory provider.</summary>
+/// <param name="provider">Provider to install; null restores the default provider.</param>
+/// <returns>The provider that was previously installed.</returns>
 inline IMemoryProvider* SetProvider(IMemoryProvider* provider) noexcept {
     if (!provider) provider = &DefaultProvider();
     return ProviderSlot().exchange(provider, std::memory_order_acq_rel);
 }
 
+/// <summary>Restores the portable fallback memory provider.</summary>
 inline void ResetProvider() noexcept { (void)SetProvider(&DefaultProvider()); }
 
+/// <summary>Standard-library-compatible allocator that routes storage through an ESPressio memory provider.</summary>
+/// <typeparam name="T">Element type allocated by the allocator.</typeparam>
+/// <typeparam name="Policy">Memory placement policy applied to every allocation.</typeparam>
 template<typename T, MemoryPolicy Policy = MemoryPolicy::Automatic>
 class Allocator {
 public:
@@ -82,17 +104,23 @@ public:
     using is_always_equal = std::false_type;
     template<typename U> struct rebind { using other = Allocator<U, Policy>; };
 
+    /// <summary>Creates an allocator bound to the currently installed memory provider.</summary>
     Allocator() noexcept : _provider(&GetProvider()) {}
+    /// <summary>Creates an allocator bound to an explicit memory provider.</summary>
     explicit Allocator(IMemoryProvider& provider) noexcept : _provider(&provider) {}
+    /// <summary>Copies the provider binding from a compatible allocator.</summary>
     template<typename U> Allocator(const Allocator<U, Policy>& other) noexcept : _provider(other.Provider()) {}
 
+    /// <summary>Allocates storage for the requested number of elements.</summary>
     T* allocate(std::size_t count) {
         if (count > static_cast<std::size_t>(-1) / sizeof(T)) throw std::bad_array_new_length();
         return static_cast<T*>(_provider->Allocate(count * sizeof(T), alignof(T), Policy));
     }
+    /// <summary>Releases storage previously allocated for the supplied element count.</summary>
     void deallocate(T* pointer, std::size_t count) noexcept {
         _provider->Deallocate(pointer, count * sizeof(T), alignof(T), Policy);
     }
+    /// <summary>Gets the memory provider used by this allocator instance.</summary>
     IMemoryProvider* Provider() const noexcept { return _provider; }
 
     template<typename U> bool operator==(const Allocator<U, Policy>& other) const noexcept { return _provider == other.Provider(); }
@@ -113,6 +141,9 @@ template<typename K, typename V, MemoryPolicy P = MemoryPolicy::Automatic, typen
 template<typename K, typename V, MemoryPolicy P = MemoryPolicy::Automatic, typename H = std::hash<K>, typename E = std::equal_to<K>> using UnorderedMap = std::unordered_map<K, V, H, E, Allocator<std::pair<const K, V>, P>>;
 template<MemoryPolicy P = MemoryPolicy::Automatic> using String = std::basic_string<char, std::char_traits<char>, Allocator<char, P>>;
 
+/// <summary>Constructs a shared object using the ESPressio allocator and selected memory policy.</summary>
+/// <typeparam name="T">Object type to construct.</typeparam>
+/// <typeparam name="P">Memory policy used for the shared allocation.</typeparam>
 template<typename T, MemoryPolicy P = MemoryPolicy::Automatic, typename... Args>
 std::shared_ptr<T> MakeShared(Args&&... args) {
     return std::allocate_shared<T>(Allocator<T, P>{}, std::forward<Args>(args)...);
