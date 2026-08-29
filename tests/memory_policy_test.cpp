@@ -41,10 +41,22 @@ struct TrackedObject {
 int TrackedObject::Alive = 0;
 
 int main() {
+    // Model an ESPressio singleton/global whose allocator-aware member is
+    // constructed before the platform provider is installed. The allocator
+    // must bind only when storage is actually requested.
+    Vector<int, MemoryPolicy::ExternalPreferred> lateBoundValues;
+    assert(!lateBoundValues.get_allocator().IsProviderBound());
+
     TrackingProvider provider;
     IMemoryProvider* previous = SetProvider(&provider);
 
     {
+        lateBoundValues.push_back(9);
+        assert(lateBoundValues.size() == 1);
+        assert(provider.Allocations == 1);
+        assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+        assert(lateBoundValues.get_allocator().IsProviderBound());
+
         Vector<int, MemoryPolicy::ExternalPreferred> values;
         values.push_back(1);
         values.push_back(2);
@@ -85,6 +97,17 @@ int main() {
         assert(replacement.Deallocations == 0);
         SetProvider(&provider);
     }
+
+    // Releasing a container after the active provider changes must still use
+    // the provider that supplied its storage.
+    const std::size_t deallocationsBefore = provider.Deallocations;
+    TrackingProvider replacement;
+    SetProvider(&replacement);
+    lateBoundValues.clear();
+    lateBoundValues.shrink_to_fit();
+    assert(provider.Deallocations > deallocationsBefore);
+    assert(replacement.Deallocations == 0);
+    SetProvider(&provider);
 
     assert(provider.Allocations > 0);
     assert(provider.Deallocations == provider.Allocations);
