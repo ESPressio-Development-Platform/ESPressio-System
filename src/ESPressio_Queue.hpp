@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "ESPressio_Memory.hpp"
 #include "ESPressio_Platform.hpp"
 #include "ESPressio_Synchronization.hpp"
 
@@ -51,13 +52,33 @@ class IQueueProvider {
 public:
     virtual ~IQueueProvider() = default;
 
-    /// <summary>Creates a message queue.</summary>
+    /// <summary>Creates a message queue using the provider's normal/default memory placement.</summary>
     /// <param name="elementSize">Size in bytes of each queue element.</param>
     /// <param name="capacity">Maximum number of elements retained by the queue.</param>
     virtual std::unique_ptr<IMessageQueue> Create(
         std::size_t elementSize,
         std::size_t capacity
     ) = 0;
+
+    /// <summary>Creates a message queue using an explicit memory-placement policy when supported by the platform.</summary>
+    /// <param name="elementSize">Size in bytes of each queue element.</param>
+    /// <param name="capacity">Maximum number of elements retained by the queue.</param>
+    /// <param name="policy">Requested backing-storage placement policy.</param>
+    /// <returns>The created queue, or null when the requested policy cannot be supported.</returns>
+    /// <remarks>The default implementation preserves compatibility with providers that predate policy-aware queues: Automatic and Internal requests use normal creation while external requests report unavailable.</remarks>
+    virtual std::unique_ptr<IMessageQueue> Create(
+        std::size_t elementSize,
+        std::size_t capacity,
+        Memory::MemoryPolicy policy
+    ) {
+        if (
+            policy == Memory::MemoryPolicy::Automatic ||
+            policy == Memory::MemoryPolicy::Internal
+        ) {
+            return Create(elementSize, capacity);
+        }
+        return nullptr;
+    }
 };
 
 inline IQueueProvider*& ProviderStorage() noexcept {
@@ -80,7 +101,7 @@ inline void ResetProvider() noexcept {
     ProviderStorage() = nullptr;
 }
 
-/// <summary>Creates a queue through the active provider.</summary>
+/// <summary>Creates a queue through the active provider using its normal/default memory placement.</summary>
 /// <param name="elementSize">Size in bytes of each queue element.</param>
 /// <param name="capacity">Maximum number of elements retained by the queue.</param>
 /// <returns>The created queue, or null when no provider is installed.</returns>
@@ -92,12 +113,40 @@ inline std::unique_ptr<IMessageQueue> Create(
     return provider != nullptr ? provider->Create(elementSize, capacity) : nullptr;
 }
 
+/// <summary>Creates a queue through the active provider using an explicit memory-placement policy.</summary>
+/// <param name="elementSize">Size in bytes of each queue element.</param>
+/// <param name="capacity">Maximum number of elements retained by the queue.</param>
+/// <param name="policy">Requested backing-storage placement policy.</param>
+/// <returns>The created queue, or null when no provider is installed or the policy cannot be satisfied.</returns>
+inline std::unique_ptr<IMessageQueue> Create(
+    std::size_t elementSize,
+    std::size_t capacity,
+    Memory::MemoryPolicy policy
+) {
+    auto* provider = Provider();
+    return provider != nullptr
+        ? provider->Create(elementSize, capacity, policy)
+        : nullptr;
+}
+
 /// <summary>Creates a typed queue whose element size is inferred from <typeparamref name="T"/>.</summary>
 /// <typeparam name="T">Element type stored in the queue.</typeparam>
 /// <param name="capacity">Maximum number of elements retained by the queue.</param>
 template<typename T>
 inline std::unique_ptr<IMessageQueue> Create(std::size_t capacity) {
     return Create(sizeof(T), capacity);
+}
+
+/// <summary>Creates a typed queue whose backing storage follows an explicit memory policy.</summary>
+/// <typeparam name="T">Element type stored in the queue.</typeparam>
+/// <param name="capacity">Maximum number of elements retained by the queue.</param>
+/// <param name="policy">Requested backing-storage placement policy.</param>
+template<typename T>
+inline std::unique_ptr<IMessageQueue> Create(
+    std::size_t capacity,
+    Memory::MemoryPolicy policy
+) {
+    return Create(sizeof(T), capacity, policy);
 }
 
 }
