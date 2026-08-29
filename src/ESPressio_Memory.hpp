@@ -44,7 +44,7 @@ public:
     virtual bool Supports(MemoryPolicy policy) const noexcept = 0;
 
     /// <summary>Requests that platform-default/automatic allocations at or above a threshold prefer external memory.</summary>
-    /// <param name="minimumBytes">Smallest allocation size that should prefer external memory; zero restores the platform default when supported.</param>
+    /// <param name="minimumBytes">Smallest allocation size that should prefer external memory; zero allows all eligible allocation sizes to prefer external memory.</param>
     /// <returns><c>true</c> when the platform accepted the preference.</returns>
     /// <remarks>
     /// This capability is deliberately optional. It is intended to complement explicit ESPressio allocator policies by
@@ -111,7 +111,7 @@ inline IMemoryProvider* SetProvider(IMemoryProvider* provider) noexcept {
 inline void ResetProvider() noexcept { (void)SetProvider(&DefaultProvider()); }
 
 /// <summary>Configures the active platform's ordinary automatic-allocation external-memory preference when supported.</summary>
-/// <param name="minimumBytes">Smallest ordinary allocation that should prefer external memory.</param>
+/// <param name="minimumBytes">Smallest ordinary allocation that should prefer external memory; zero allows every eligible size.</param>
 /// <returns><c>true</c> when the active provider supports and accepted the preference.</returns>
 /// <remarks>
 /// Use this only after the platform memory provider has been installed. Explicit ESPressio memory policies continue to
