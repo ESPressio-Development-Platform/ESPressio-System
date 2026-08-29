@@ -7,9 +7,11 @@
 #include <map>
 #include <memory>
 #include <new>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -139,7 +141,57 @@ template<typename T, MemoryPolicy P = MemoryPolicy::Automatic> using Vector = st
 template<typename T, MemoryPolicy P = MemoryPolicy::Automatic> using Deque = std::deque<T, Allocator<T, P>>;
 template<typename K, typename V, MemoryPolicy P = MemoryPolicy::Automatic, typename C = std::less<K>> using Map = std::map<K, V, C, Allocator<std::pair<const K, V>, P>>;
 template<typename K, typename V, MemoryPolicy P = MemoryPolicy::Automatic, typename H = std::hash<K>, typename E = std::equal_to<K>> using UnorderedMap = std::unordered_map<K, V, H, E, Allocator<std::pair<const K, V>, P>>;
+template<typename T, MemoryPolicy P = MemoryPolicy::Automatic, typename C = std::less<T>> using Set = std::set<T, C, Allocator<T, P>>;
+template<typename T, MemoryPolicy P = MemoryPolicy::Automatic, typename H = std::hash<T>, typename E = std::equal_to<T>> using UnorderedSet = std::unordered_set<T, H, E, Allocator<T, P>>;
 template<MemoryPolicy P = MemoryPolicy::Automatic> using String = std::basic_string<char, std::char_traits<char>, Allocator<char, P>>;
+template<MemoryPolicy P = MemoryPolicy::Automatic> using ByteVector = Vector<unsigned char, P>;
+
+/// <summary>Destroys and releases one object through the provider and policy that allocated it.</summary>
+/// <typeparam name="T">Object type owned by the deleter.</typeparam>
+/// <typeparam name="P">Memory policy used for the object allocation.</typeparam>
+template<typename T, MemoryPolicy P = MemoryPolicy::Automatic>
+class ObjectDeleter {
+public:
+    /// <summary>Creates a deleter bound to the currently installed memory provider.</summary>
+    ObjectDeleter() noexcept : _provider(&GetProvider()) {}
+
+    /// <summary>Creates a deleter bound to the supplied memory provider.</summary>
+    explicit ObjectDeleter(IMemoryProvider& provider) noexcept : _provider(&provider) {}
+
+    /// <summary>Destroys and releases the supplied object.</summary>
+    void operator()(T* pointer) const noexcept {
+        if (pointer == nullptr) return;
+        pointer->~T();
+        _provider->Deallocate(pointer, sizeof(T), alignof(T), P);
+    }
+
+    /// <summary>Gets the memory provider used by this deleter.</summary>
+    IMemoryProvider* Provider() const noexcept { return _provider; }
+
+private:
+    IMemoryProvider* _provider;
+};
+
+/// <summary>Unique ownership whose object storage is allocated by an ESPressio memory provider.</summary>
+template<typename T, MemoryPolicy P = MemoryPolicy::Automatic>
+using UniquePtr = std::unique_ptr<T, ObjectDeleter<T, P>>;
+
+/// <summary>Constructs a uniquely owned object using the ESPressio allocator and selected memory policy.</summary>
+/// <typeparam name="T">Object type to construct.</typeparam>
+/// <typeparam name="P">Memory policy used for the object allocation.</typeparam>
+template<typename T, MemoryPolicy P = MemoryPolicy::Automatic, typename... Args>
+UniquePtr<T, P> MakeUnique(Args&&... args) {
+    static_assert(!std::is_array_v<T>, "ESPressio MakeUnique currently supports object types, not arrays.");
+    IMemoryProvider& provider = GetProvider();
+    void* storage = provider.Allocate(sizeof(T), alignof(T), P);
+    try {
+        T* object = ::new (storage) T(std::forward<Args>(args)...);
+        return UniquePtr<T, P>(object, ObjectDeleter<T, P>(provider));
+    } catch (...) {
+        provider.Deallocate(storage, sizeof(T), alignof(T), P);
+        throw;
+    }
+}
 
 /// <summary>Constructs a shared object using the ESPressio allocator and selected memory policy.</summary>
 /// <typeparam name="T">Object type to construct.</typeparam>
