@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <ESPressio_Memory.hpp>
+#include <ESPressio_PolymorphicMemory.hpp>
 
 using namespace ESPressio::System::Memory;
 
@@ -39,6 +40,22 @@ struct TrackedObject {
 };
 
 int TrackedObject::Alive = 0;
+
+struct PolymorphicBase {
+    virtual ~PolymorphicBase() = default;
+    virtual int Value() const = 0;
+};
+
+struct PolymorphicDerived final : PolymorphicBase {
+    static int Alive;
+    int Stored = 0;
+
+    explicit PolymorphicDerived(int value) : Stored(value) { ++Alive; }
+    ~PolymorphicDerived() override { --Alive; }
+    int Value() const override { return Stored; }
+};
+
+int PolymorphicDerived::Alive = 0;
 
 int main() {
     // Model an ESPressio singleton/global whose allocator-aware member is
@@ -89,10 +106,22 @@ int main() {
         assert(TrackedObject::Alive == 1);
         assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
 
+        auto polymorphic = MakePolymorphicUnique<
+            PolymorphicBase,
+            PolymorphicDerived,
+            MemoryPolicy::ExternalPreferred
+        >(11);
+        assert(polymorphic);
+        assert(polymorphic->Value() == 11);
+        assert(PolymorphicDerived::Alive == 1);
+        assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+
         TrackingProvider replacement;
         SetProvider(&replacement);
         unique.reset();
+        polymorphic.reset();
         assert(TrackedObject::Alive == 0);
+        assert(PolymorphicDerived::Alive == 0);
         assert(provider.Deallocations > 0);
         assert(replacement.Deallocations == 0);
         SetProvider(&provider);
