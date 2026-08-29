@@ -125,37 +125,55 @@ inline bool ConfigureAutomaticExternalPreference(std::size_t minimumBytes) noexc
 /// <summary>Standard-library-compatible allocator that routes storage through an ESPressio memory provider.</summary>
 /// <typeparam name="T">Element type allocated by the allocator.</typeparam>
 /// <typeparam name="Policy">Memory placement policy applied to every allocation.</typeparam>
+/// <remarks>
+/// Default-constructed allocators bind lazily to the active provider on their first allocation. This is important for
+/// ESPressio objects created during static initialization: their containers can be constructed before a platform provider
+/// is installed without becoming permanently bound to the portable fallback heap. Once an allocator performs an
+/// allocation it retains that provider so the matching deallocation always returns storage to the correct heap.
+/// </remarks>
 template<typename T, MemoryPolicy Policy = MemoryPolicy::Automatic>
 class Allocator {
 public:
     using value_type = T;
     using is_always_equal = std::false_type;
+    using propagate_on_container_move_assignment = std::true_type;
+    using propagate_on_container_swap = std::true_type;
     template<typename U> struct rebind { using other = Allocator<U, Policy>; };
 
-    /// <summary>Creates an allocator bound to the currently installed memory provider.</summary>
-    Allocator() noexcept : _provider(&GetProvider()) {}
+    /// <summary>Creates an allocator that binds to the active provider on its first allocation.</summary>
+    Allocator() noexcept = default;
     /// <summary>Creates an allocator bound to an explicit memory provider.</summary>
     explicit Allocator(IMemoryProvider& provider) noexcept : _provider(&provider) {}
-    /// <summary>Copies the provider binding from a compatible allocator.</summary>
-    template<typename U> Allocator(const Allocator<U, Policy>& other) noexcept : _provider(other.Provider()) {}
+    /// <summary>Copies the provider binding from a compatible allocator without forcing an unbound allocator to bind early.</summary>
+    template<typename U> Allocator(const Allocator<U, Policy>& other) noexcept : _provider(other._provider) {}
 
     /// <summary>Allocates storage for the requested number of elements.</summary>
     T* allocate(std::size_t count) {
         if (count > static_cast<std::size_t>(-1) / sizeof(T)) throw std::bad_array_new_length();
-        return static_cast<T*>(_provider->Allocate(count * sizeof(T), alignof(T), Policy));
+        IMemoryProvider* provider = BindProvider();
+        return static_cast<T*>(provider->Allocate(count * sizeof(T), alignof(T), Policy));
     }
     /// <summary>Releases storage previously allocated for the supplied element count.</summary>
     void deallocate(T* pointer, std::size_t count) noexcept {
-        _provider->Deallocate(pointer, count * sizeof(T), alignof(T), Policy);
+        if (pointer == nullptr) return;
+        IMemoryProvider* provider = _provider != nullptr ? _provider : &GetProvider();
+        provider->Deallocate(pointer, count * sizeof(T), alignof(T), Policy);
     }
-    /// <summary>Gets the memory provider used by this allocator instance.</summary>
-    IMemoryProvider* Provider() const noexcept { return _provider; }
+    /// <summary>Gets the effective provider, resolving an as-yet-unbound allocator against the currently active provider.</summary>
+    IMemoryProvider* Provider() const noexcept { return _provider != nullptr ? _provider : &GetProvider(); }
+    /// <summary>Indicates whether this allocator has already committed to a provider by allocating or explicit construction.</summary>
+    bool IsProviderBound() const noexcept { return _provider != nullptr; }
 
-    template<typename U> bool operator==(const Allocator<U, Policy>& other) const noexcept { return _provider == other.Provider(); }
+    template<typename U> bool operator==(const Allocator<U, Policy>& other) const noexcept { return Provider() == other.Provider(); }
     template<typename U> bool operator!=(const Allocator<U, Policy>& other) const noexcept { return !(*this == other); }
 private:
+    IMemoryProvider* BindProvider() noexcept {
+        if (_provider == nullptr) _provider = &GetProvider();
+        return _provider;
+    }
+
     template<typename, MemoryPolicy> friend class Allocator;
-    IMemoryProvider* _provider;
+    IMemoryProvider* _provider = nullptr;
 };
 
 template<typename T> using AutomaticAllocator = Allocator<T, MemoryPolicy::Automatic>;
