@@ -42,6 +42,20 @@ public:
 
     /// <summary>Indicates whether the provider can satisfy the supplied memory policy.</summary>
     virtual bool Supports(MemoryPolicy policy) const noexcept = 0;
+
+    /// <summary>Requests that platform-default/automatic allocations at or above a threshold prefer external memory.</summary>
+    /// <param name="minimumBytes">Smallest allocation size that should prefer external memory; zero restores the platform default when supported.</param>
+    /// <returns><c>true</c> when the platform accepted the preference.</returns>
+    /// <remarks>
+    /// This capability is deliberately optional. It is intended to complement explicit ESPressio allocator policies by
+    /// steering third-party and standard-library allocations that use the platform's ordinary default heap. Explicit
+    /// <c>Internal</c> allocations and platform capability allocations such as DMA remain governed by their requested
+    /// capabilities rather than this preference.
+    /// </remarks>
+    virtual bool ConfigureAutomaticExternalPreference(std::size_t minimumBytes) noexcept {
+        (void)minimumBytes;
+        return false;
+    }
 };
 
 /// <summary>Portable fallback provider backed by the standard C++ allocation operators.</summary>
@@ -95,6 +109,18 @@ inline IMemoryProvider* SetProvider(IMemoryProvider* provider) noexcept {
 
 /// <summary>Restores the portable fallback memory provider.</summary>
 inline void ResetProvider() noexcept { (void)SetProvider(&DefaultProvider()); }
+
+/// <summary>Configures the active platform's ordinary automatic-allocation external-memory preference when supported.</summary>
+/// <param name="minimumBytes">Smallest ordinary allocation that should prefer external memory.</param>
+/// <returns><c>true</c> when the active provider supports and accepted the preference.</returns>
+/// <remarks>
+/// Use this only after the platform memory provider has been installed. Explicit ESPressio memory policies continue to
+/// take precedence. The setting is useful for large third-party/STL allocations that cannot directly consume an
+/// ESPressio allocator, while capability-specific platform allocations remain unaffected.
+/// </remarks>
+inline bool ConfigureAutomaticExternalPreference(std::size_t minimumBytes) noexcept {
+    return GetProvider().ConfigureAutomaticExternalPreference(minimumBytes);
+}
 
 /// <summary>Standard-library-compatible allocator that routes storage through an ESPressio memory provider.</summary>
 /// <typeparam name="T">Element type allocated by the allocator.</typeparam>
