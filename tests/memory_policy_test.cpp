@@ -1,6 +1,8 @@
 #include <cassert>
 #include <cstddef>
 #include <new>
+#include <set>
+#include <unordered_set>
 #include <utility>
 
 #include <ESPressio_Memory.hpp>
@@ -28,6 +30,16 @@ public:
     bool Supports(MemoryPolicy) const noexcept override { return true; }
 };
 
+struct TrackedObject {
+    static int Alive;
+    int Value = 0;
+
+    explicit TrackedObject(int value) : Value(value) { ++Alive; }
+    ~TrackedObject() { --Alive; }
+};
+
+int TrackedObject::Alive = 0;
+
 int main() {
     TrackingProvider provider;
     IMemoryProvider* previous = SetProvider(&provider);
@@ -39,9 +51,39 @@ int main() {
         assert(values.size() == 2);
         assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
 
+        ByteVector<MemoryPolicy::ExternalPreferred> bytes;
+        bytes.push_back(0x12);
+        bytes.push_back(0x34);
+        assert(bytes.size() == 2);
+        assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+
+        Set<int, MemoryPolicy::ExternalPreferred> ordered;
+        ordered.insert(3);
+        assert(ordered.count(3) == 1);
+        assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+
+        UnorderedSet<int, MemoryPolicy::ExternalPreferred> unordered;
+        unordered.insert(4);
+        assert(unordered.count(4) == 1);
+        assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+
         auto object = MakeShared<std::pair<int, int>, MemoryPolicy::ExternalPreferred>(3, 4);
         assert(object->first == 3 && object->second == 4);
         assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+
+        auto unique = MakeUnique<TrackedObject, MemoryPolicy::ExternalPreferred>(7);
+        assert(unique);
+        assert(unique->Value == 7);
+        assert(TrackedObject::Alive == 1);
+        assert(provider.LastPolicy == MemoryPolicy::ExternalPreferred);
+
+        TrackingProvider replacement;
+        SetProvider(&replacement);
+        unique.reset();
+        assert(TrackedObject::Alive == 0);
+        assert(provider.Deallocations > 0);
+        assert(replacement.Deallocations == 0);
+        SetProvider(&provider);
     }
 
     assert(provider.Allocations > 0);
