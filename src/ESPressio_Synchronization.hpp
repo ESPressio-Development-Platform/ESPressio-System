@@ -92,24 +92,24 @@ public:
     virtual std::unique_ptr<IReadWriteLock> CreateReadWriteLock() { return {}; }
 };
 
-inline ISynchronizationProvider*& ProviderStorage() noexcept {
-    static ISynchronizationProvider* provider = nullptr;
+inline std::atomic<ISynchronizationProvider*>& ProviderStorage() noexcept {
+    static std::atomic<ISynchronizationProvider*> provider{nullptr};
     return provider;
 }
 
 /// <summary>Gets the currently installed synchronization provider, or null when unavailable.</summary>
 inline ISynchronizationProvider* Provider() noexcept {
-    return ProviderStorage();
+    return ProviderStorage().load(std::memory_order_acquire);
 }
 
 /// <summary>Installs the process-wide synchronization provider.</summary>
 inline void SetProvider(ISynchronizationProvider* provider) noexcept {
-    ProviderStorage() = provider;
+    ProviderStorage().store(provider, std::memory_order_release);
 }
 
 /// <summary>Removes the currently installed synchronization provider.</summary>
 inline void ResetProvider() noexcept {
-    ProviderStorage() = nullptr;
+    ProviderStorage().store(nullptr, std::memory_order_release);
 }
 
 namespace Detail {
