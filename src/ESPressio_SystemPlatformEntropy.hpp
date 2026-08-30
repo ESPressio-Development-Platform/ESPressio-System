@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -38,28 +39,32 @@ public:
     }
 };
 
-inline IEntropySource*& SourceStorage() noexcept {
+inline NullEntropySource& FallbackSource() noexcept {
     static NullEntropySource fallback;
-    static IEntropySource* source = &fallback;
+    return fallback;
+}
+
+inline std::atomic<IEntropySource*>& SourceStorage() noexcept {
+    static std::atomic<IEntropySource*> source{&FallbackSource()};
     return source;
 }
 
 /// <summary>Gets the active process-wide entropy source.</summary>
 inline IEntropySource& Source() noexcept {
-    return *SourceStorage();
+    auto* source = SourceStorage().load(std::memory_order_acquire);
+    return source != nullptr ? *source : FallbackSource();
 }
 
 /// <summary>Installs a non-null process-wide entropy source.</summary>
 inline void SetSource(IEntropySource* source) noexcept {
     if (source != nullptr) {
-        SourceStorage() = source;
+        SourceStorage().store(source, std::memory_order_release);
     }
 }
 
 /// <summary>Restores the fallback unavailable entropy source.</summary>
 inline void ResetSource() noexcept {
-    static NullEntropySource fallback;
-    SourceStorage() = &fallback;
+    SourceStorage().store(&FallbackSource(), std::memory_order_release);
 }
 
 }
