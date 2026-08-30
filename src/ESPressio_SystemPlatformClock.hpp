@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -45,24 +46,35 @@ public:
     bool IsInterruptSafe() const noexcept override { return false; }
 };
 
-inline IMonotonicClock*& MonotonicClockStorage() noexcept {
+inline SteadyMonotonicClock& FallbackMonotonicClock() noexcept {
     static SteadyMonotonicClock fallback;
-    static IMonotonicClock* clock = &fallback;
+    return fallback;
+}
+
+inline std::atomic<IMonotonicClock*>& MonotonicClockStorage() noexcept {
+    static std::atomic<IMonotonicClock*> clock{&FallbackMonotonicClock()};
     return clock;
 }
 
 /// <summary>Gets the active process-wide monotonic clock.</summary>
-inline IMonotonicClock& Monotonic() noexcept { return *MonotonicClockStorage(); }
+inline IMonotonicClock& Monotonic() noexcept {
+    auto* clock = MonotonicClockStorage().load(std::memory_order_acquire);
+    return clock != nullptr ? *clock : FallbackMonotonicClock();
+}
 
 /// <summary>Installs a non-null process-wide monotonic clock.</summary>
 inline void SetMonotonicClock(IMonotonicClock* clock) noexcept {
-    if (clock != nullptr) MonotonicClockStorage() = clock;
+    if (clock != nullptr) {
+        MonotonicClockStorage().store(clock, std::memory_order_release);
+    }
 }
 
 /// <summary>Restores the portable steady-clock fallback.</summary>
 inline void ResetMonotonicClock() noexcept {
-    static SteadyMonotonicClock fallback;
-    MonotonicClockStorage() = &fallback;
+    MonotonicClockStorage().store(
+        &FallbackMonotonicClock(),
+        std::memory_order_release
+    );
 }
 
 /// <summary>Represents a controllable high-resolution platform counter.</summary>
@@ -98,24 +110,24 @@ public:
     virtual std::unique_ptr<IHighResolutionCounter> Create(uint64_t requestedResolutionHz) = 0;
 };
 
-inline IHighResolutionCounterProvider*& HighResolutionProviderStorage() noexcept {
-    static IHighResolutionCounterProvider* provider = nullptr;
+inline std::atomic<IHighResolutionCounterProvider*>& HighResolutionProviderStorage() noexcept {
+    static std::atomic<IHighResolutionCounterProvider*> provider{nullptr};
     return provider;
 }
 
 /// <summary>Gets the currently installed high-resolution counter provider.</summary>
 inline IHighResolutionCounterProvider* HighResolutionProvider() noexcept {
-    return HighResolutionProviderStorage();
+    return HighResolutionProviderStorage().load(std::memory_order_acquire);
 }
 
 /// <summary>Installs the process-wide high-resolution counter provider.</summary>
 inline void SetHighResolutionCounterProvider(IHighResolutionCounterProvider* provider) noexcept {
-    HighResolutionProviderStorage() = provider;
+    HighResolutionProviderStorage().store(provider, std::memory_order_release);
 }
 
 /// <summary>Removes the currently installed high-resolution counter provider.</summary>
 inline void ResetHighResolutionCounterProvider() noexcept {
-    HighResolutionProviderStorage() = nullptr;
+    HighResolutionProviderStorage().store(nullptr, std::memory_order_release);
 }
 
 /// <summary>Creates a high-resolution counter through the active provider.</summary>
