@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -81,24 +82,24 @@ public:
     }
 };
 
-inline IQueueProvider*& ProviderStorage() noexcept {
-    static IQueueProvider* provider = nullptr;
+inline std::atomic<IQueueProvider*>& ProviderStorage() noexcept {
+    static std::atomic<IQueueProvider*> provider{nullptr};
     return provider;
 }
 
 /// <summary>Gets the currently installed queue provider, or null when none is configured.</summary>
 inline IQueueProvider* Provider() noexcept {
-    return ProviderStorage();
+    return ProviderStorage().load(std::memory_order_acquire);
 }
 
 /// <summary>Installs the process-wide queue provider.</summary>
 inline void SetProvider(IQueueProvider* provider) noexcept {
-    ProviderStorage() = provider;
+    ProviderStorage().store(provider, std::memory_order_release);
 }
 
 /// <summary>Removes the currently installed queue provider.</summary>
 inline void ResetProvider() noexcept {
-    ProviderStorage() = nullptr;
+    ProviderStorage().store(nullptr, std::memory_order_release);
 }
 
 /// <summary>Creates a queue through the active provider using its normal/default memory placement.</summary>
