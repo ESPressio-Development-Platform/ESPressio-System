@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -140,29 +141,33 @@ public:
     }
 };
 
-inline IExecutionProvider*& ProviderStorage() noexcept {
+inline NullExecutionProvider& FallbackProvider() noexcept {
     static NullExecutionProvider fallback;
-    static IExecutionProvider* provider = &fallback;
+    return fallback;
+}
+
+inline std::atomic<IExecutionProvider*>& ProviderStorage() noexcept {
+    static std::atomic<IExecutionProvider*> provider{&FallbackProvider()};
     return provider;
 }
 
 /// <summary>Gets the active process-wide execution provider.</summary>
 inline IExecutionProvider& Provider() noexcept {
-    return *ProviderStorage();
+    auto* provider = ProviderStorage().load(std::memory_order_acquire);
+    return provider != nullptr ? *provider : FallbackProvider();
 }
 
 /// <summary>Installs a non-null process-wide execution provider.</summary>
 /// <param name="provider">Provider to install. Null values are ignored.</param>
 inline void SetProvider(IExecutionProvider* provider) noexcept {
     if (provider != nullptr) {
-        ProviderStorage() = provider;
+        ProviderStorage().store(provider, std::memory_order_release);
     }
 }
 
 /// <summary>Restores the fallback execution provider.</summary>
 inline void ResetProvider() noexcept {
-    static NullExecutionProvider fallback;
-    ProviderStorage() = &fallback;
+    ProviderStorage().store(&FallbackProvider(), std::memory_order_release);
 }
 
 }
