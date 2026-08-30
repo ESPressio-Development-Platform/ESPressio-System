@@ -21,3 +21,7 @@ jobs:
         run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/platform_abstractions_test.cpp -o platform_abstractions_test
       - name: Run platform-abstraction regression
         run: ./platform_abstractions_test
+      - name: Build provider-publication regression with ThreadSanitizer
+        run: g++ -std=c++17 -Wall -Wextra -Werror -pthread -fsanitize=thread -fno-omit-frame-pointer -Isrc tests/provider_publication_test.cpp -o provider_publication_test
+      - name: Run provider-publication regression with ThreadSanitizer
+        run: ./provider_publication_test
