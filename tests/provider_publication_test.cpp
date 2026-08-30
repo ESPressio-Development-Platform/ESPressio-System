@@ -23,9 +23,9 @@ public:
         void*,
         const Execution::ExecutionConfiguration&
     ) override { return {}; }
-    PlatformResult Destroy(Execution::ExecutionHandle) override { return PlatformResult::Success(); }
-    PlatformResult Suspend(Execution::ExecutionHandle) override { return PlatformResult::Success(); }
-    PlatformResult Resume(Execution::ExecutionHandle) override { return PlatformResult::Success(); }
+    PlatformResult Destroy(Execution::ExecutionHandle) override { return PlatformResult::Succeeded(); }
+    PlatformResult Suspend(Execution::ExecutionHandle) override { return PlatformResult::Succeeded(); }
+    PlatformResult Resume(Execution::ExecutionHandle) override { return PlatformResult::Succeeded(); }
     Execution::ExecutionHandle Current() const noexcept override { return 1; }
     uint32_t MinimumFreeStackBytes(Execution::ExecutionHandle) const noexcept override { return 0; }
     uint32_t ProcessorCount() const noexcept override { return 1; }
@@ -51,14 +51,14 @@ public:
 class TestGPIOController final : public GPIO::IController {
 public:
     PlatformResult Configure(GPIO::Pin, const GPIO::PinConfiguration&) noexcept override {
-        return PlatformResult::Success();
+        return PlatformResult::Succeeded();
     }
     PlatformResult Write(GPIO::Pin, GPIO::State) noexcept override {
-        return PlatformResult::Success();
+        return PlatformResult::Succeeded();
     }
     PlatformResult Read(GPIO::Pin, GPIO::State& state) const noexcept override {
         state = GPIO::State::Low;
-        return PlatformResult::Success();
+        return PlatformResult::Succeeded();
     }
     GPIO::InterruptCreationResult CreateInterrupt(
         GPIO::Pin,
@@ -87,7 +87,7 @@ public:
 class TestEntropySource final : public Entropy::IEntropySource {
 public:
     PlatformResult Fill(void*, std::size_t) noexcept override {
-        return PlatformResult::Success();
+        return PlatformResult::Succeeded();
     }
     bool IsCryptographicallySuitable() const noexcept override { return true; }
 };
@@ -130,19 +130,19 @@ void StressProviderPublication() {
             auto& activeExecution = Execution::Provider();
             assert(
                 &activeExecution == &execution ||
-                dynamic_cast<Execution::NullExecutionProvider*>(&activeExecution) != nullptr
+                &activeExecution == &Execution::FallbackProvider()
             );
 
             auto& monotonic = Clock::Monotonic();
             assert(
                 &monotonic == &clock ||
-                dynamic_cast<Clock::SteadyMonotonicClock*>(&monotonic) != nullptr
+                &monotonic == &Clock::FallbackMonotonicClock()
             );
 
             auto& source = Entropy::Source();
             assert(
                 &source == &entropy ||
-                dynamic_cast<Entropy::NullEntropySource*>(&source) != nullptr
+                &source == &Entropy::FallbackSource()
             );
         }
     });
