@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -149,24 +150,24 @@ public:
     virtual bool SupportsInterruptAffinity() const noexcept = 0;
 };
 
-inline IController*& ControllerStorage() noexcept {
-    static IController* controller = nullptr;
+inline std::atomic<IController*>& ControllerStorage() noexcept {
+    static std::atomic<IController*> controller{nullptr};
     return controller;
 }
 
 /// <summary>Gets the currently installed GPIO controller, or null when none is configured.</summary>
 inline IController* Controller() noexcept {
-    return ControllerStorage();
+    return ControllerStorage().load(std::memory_order_acquire);
 }
 
 /// <summary>Installs the process-wide GPIO controller.</summary>
 inline void SetController(IController* controller) noexcept {
-    ControllerStorage() = controller;
+    ControllerStorage().store(controller, std::memory_order_release);
 }
 
 /// <summary>Removes the currently installed GPIO controller.</summary>
 inline void ResetController() noexcept {
-    ControllerStorage() = nullptr;
+    ControllerStorage().store(nullptr, std::memory_order_release);
 }
 
 }
