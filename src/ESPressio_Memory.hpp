@@ -237,11 +237,16 @@ UniquePtr<T, P> MakeUnique(Args&&... args) {
     }
 }
 
+/// <summary>Shared ownership type used by ESPressio components.</summary>
+/// <remarks>Construct shared objects with MakeShared so both object and control-block storage use the ESPressio allocator.</remarks>
+template<typename T>
+using SharedPtr = std::shared_ptr<T>;
+
 /// <summary>Constructs a shared object using the ESPressio allocator and selected memory policy.</summary>
 /// <typeparam name="T">Object type to construct.</typeparam>
 /// <typeparam name="P">Memory policy used for the shared allocation.</typeparam>
 template<typename T, MemoryPolicy P = MemoryPolicy::Automatic, typename... Args>
-std::shared_ptr<T> MakeShared(Args&&... args) {
+SharedPtr<T> MakeShared(Args&&... args) {
     return std::allocate_shared<T>(Allocator<T, P>{}, std::forward<Args>(args)...);
 }
 
