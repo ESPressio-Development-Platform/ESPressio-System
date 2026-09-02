@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'optimisation/**'
+  pull_request:
+
+jobs:
+  host-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build memory-policy regression
+        run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/memory_policy_test.cpp -o memory_policy_test
+      - name: Run memory-policy regression
+        run: ./memory_policy_test
+      - name: Build platform-abstraction regression
+        run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/platform_abstractions_test.cpp -o platform_abstractions_test
+      - name: Run platform-abstraction regression
+        run: ./platform_abstractions_test
+      - name: Build provider-publication regression with ThreadSanitizer
+        run: g++ -std=c++17 -Wall -Wextra -Werror -pthread -fsanitize=thread -fno-omit-frame-pointer -Isrc tests/provider_publication_test.cpp -o provider_publication_test
+      - name: Run provider-publication regression with ThreadSanitizer
+        run: ./provider_publication_test
