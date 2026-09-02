@@ -185,10 +185,10 @@ This keeps System from becoming a catch-all service library while preserving a c
 
 ```ini
 lib_deps =
-    https://github.com/ESPressio-Development-Platform/ESPressio-System.git#feature/1-system-memory-policy
+    https://github.com/ESPressio-Development-Platform/ESPressio-System.git#main
 ```
 
-After the coordinated release is published, applications should use the released version instead of the development branch.
+During the release restructuring, consumers should use the repository's `main` branch until the new platform-wide 1.0.0 release generation is published.
 
 ## Design guarantees
 
