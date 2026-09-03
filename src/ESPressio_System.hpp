@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ESPressio_DeviceIdentifier.hpp"
 #include "ESPressio_Platform.hpp"
 #include "ESPressio_Memory.hpp"
 #include "ESPressio_PolymorphicMemory.hpp"
