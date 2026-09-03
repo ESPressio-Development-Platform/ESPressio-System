@@ -19,6 +19,23 @@ Most applications do not need to interact with every System interface directly. 
 
 On ESP32, use `ESPressio-ESP32` alongside this library to install the concrete providers.
 
+## Canonical device identity
+
+`ESPressio_DeviceIdentifier.hpp` defines the permanent transport-independent device identity shared across the platform:
+
+```cpp
+#include <ESPressio_DeviceIdentifier.hpp>
+
+using ESPressio::System::DeviceIdentifier;
+
+DeviceIdentifier::Storage bytes = {/* persisted or platform-derived 16 bytes */};
+DeviceIdentifier device(bytes);
+```
+
+`DeviceIdentifier` is an exact 16-byte value. The all-zero representation is Invalid/Unspecified. It is identity rather than a Radio address or an authentication credential, so higher-level libraries must not derive authority merely from possession of a DeviceIdentifier.
+
+Platform libraries are responsible for obtaining a stable default identity from the target where appropriate. For ESP32, the platform implementation may derive the default from factory device identity/Wi-Fi MAC through a stable namespaced transformation, while applications may override it with their own persisted identifier. Hardware APIs and target-specific identity acquisition remain outside System.
+
 ## Platform result and processor affinity
 
 `ESPressio_Platform.hpp` provides common platform vocabulary:
@@ -175,7 +192,7 @@ System owns abstractions for hardware/runtime capabilities that make sense indep
 
 For example:
 
-- memory, clocks, GPIO, primitive execution, synchronization and bounded queues belong in System;
+- permanent transport-independent `DeviceIdentifier`, memory, clocks, GPIO, primitive execution, synchronization and bounded queues belong in System;
 - `IWiFiPlatform` belongs in ESPressio-WiFi;
 - ESP32 implementations of both System and WiFi contracts belong in ESPressio-ESP32.
 
@@ -193,6 +210,7 @@ During the release restructuring, consumers should use the repository's `main` b
 ## Design guarantees
 
 - No ESP32, Arduino, FreeRTOS or ESP-IDF dependency in the abstraction layer.
+- Canonical `DeviceIdentifier` is an exact fixed 16-byte transport-independent value.
 - No RTTI requirement.
 - Native platform handles/types are hidden behind ESPressio vocabulary.
 - Higher-level domain abstractions remain owned by their domain libraries.
@@ -201,6 +219,6 @@ During the release restructuring, consumers should use the repository's `main` b
 
 ## Auditing and testing
 
-`PLATFORM_ABSTRACTIONS.md` records the platform-abstraction tranche chronologically. Host regression coverage validates memory-provider behaviour and the portable platform contracts; provider-specific repositories validate the target implementations.
+`PLATFORM_ABSTRACTIONS.md` records the platform-abstraction tranche chronologically. Host regression coverage validates canonical identity, memory-provider behaviour and the portable platform contracts; provider-specific repositories validate the target implementations.
 
 See `OPTIMISATIONS.md` for the chronological memory-policy implementation history and `CHANGELOG.md` for release-facing changes.
