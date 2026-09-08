@@ -14,6 +14,13 @@ namespace System {
 namespace Queue {
 
 /// <summary>Abstracts a fixed-element-size platform message queue.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class IMessageQueue {
 public:
     virtual ~IMessageQueue() = default;
@@ -49,6 +56,13 @@ public:
 };
 
 /// <summary>Creates platform-backed message queues with a specified element size and capacity.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class IQueueProvider {
 public:
     virtual ~IQueueProvider() = default;

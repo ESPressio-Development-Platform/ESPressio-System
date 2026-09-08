@@ -20,6 +20,17 @@ using ExecutionEntry = void (*)(void*);
 constexpr ExecutionHandle InvalidExecutionHandle = 0;
 
 /// <summary>Configures the platform execution context created by an execution provider.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members:
+ * - Name (char*): 4 bytes [0 bytes dynamic allocation]
+ * - StackSizeBytes (std::size_t): 4 bytes [0 bytes dynamic allocation]
+ * - Priority (uint32_t): 4 bytes [0 bytes dynamic allocation]
+ * - Affinity (ProcessorAffinity): 2 bytes [0 bytes dynamic allocation]
+ * Total Memory: 16 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 struct ExecutionConfiguration {
     /// <summary>Diagnostic name assigned to the execution context.</summary>
     const char* Name = "ESPressio";
@@ -32,6 +43,15 @@ struct ExecutionConfiguration {
 };
 
 /// <summary>Contains the outcome and handle returned when an execution context is created.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members:
+ * - Result (PlatformResult): 8 bytes [0 bytes dynamic allocation]
+ * - Handle (ExecutionHandle): 4 bytes [0 bytes dynamic allocation]
+ * Total Memory: 12 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 struct ExecutionCreationResult {
     /// <summary>The platform operation result.</summary>
     PlatformResult Result;
@@ -57,6 +77,13 @@ struct ExecutionCreationResult {
 };
 
 /// <summary>Abstracts platform task/thread creation, lifecycle control, scheduling, and diagnostics.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class IExecutionProvider {
 public:
     virtual ~IExecutionProvider() = default;
@@ -96,6 +123,14 @@ public:
 };
 
 /// <summary>Fallback execution provider that reports execution services as unavailable.</summary>
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class NullExecutionProvider final : public IExecutionProvider {
 public:
     ExecutionCreationResult Create(

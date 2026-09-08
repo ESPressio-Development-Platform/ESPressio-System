@@ -6,6 +6,14 @@
 
 namespace {
 
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class TestExecutionProvider final : public ESPressio::System::Execution::IExecutionProvider {
 public:
     ESPressio::System::Execution::ExecutionCreationResult Create(
@@ -51,6 +59,15 @@ public:
     bool SupportsProcessorAffinity() const noexcept override { return true; }
 };
 
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members:
+ * - _set (bool): 1 bytes [0 bytes dynamic allocation]
+ * Total Memory: 8 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class TestSignal final : public ESPressio::System::Synchronization::ISignal {
 private:
     bool _set = false;
@@ -84,6 +101,15 @@ public:
     }
 };
 
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members:
+ * - Created (uint32_t): 4 bytes [0 bytes dynamic allocation]
+ * Total Memory: 8 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class TestSynchronizationProvider final
     : public ESPressio::System::Synchronization::ISynchronizationProvider {
 public:

@@ -12,6 +12,13 @@ namespace System {
 namespace Clock {
 
 /// <summary>Provides a monotonically increasing platform time source expressed in nanoseconds.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class IMonotonicClock {
 public:
     virtual ~IMonotonicClock() = default;
@@ -25,6 +32,14 @@ public:
 };
 
 /// <summary>Portable monotonic clock implementation backed by <c>std::chrono::steady_clock</c>.</summary>
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class SteadyMonotonicClock final : public IMonotonicClock {
 public:
     /// <inheritdoc/>
@@ -78,6 +93,13 @@ inline void ResetMonotonicClock() noexcept {
 }
 
 /// <summary>Represents a controllable high-resolution platform counter.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class IHighResolutionCounter {
 public:
     virtual ~IHighResolutionCounter() = default;
@@ -101,6 +123,13 @@ public:
 };
 
 /// <summary>Creates high-resolution counters using the active platform implementation.</summary>
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class IHighResolutionCounterProvider {
 public:
     virtual ~IHighResolutionCounterProvider() = default;

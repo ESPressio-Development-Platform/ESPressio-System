@@ -10,6 +10,17 @@
 
 using namespace ESPressio::System::Memory;
 
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members:
+ * - Allocations (std::size_t): 4 bytes [0 bytes dynamic allocation]
+ * - Deallocations (std::size_t): 4 bytes [0 bytes dynamic allocation]
+ * - LastPolicy (MemoryPolicy): 1 bytes [0 bytes dynamic allocation]
+ * Total Memory: 16 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 class TrackingProvider final : public IMemoryProvider {
 public:
     std::size_t Allocations = 0;
@@ -31,6 +42,14 @@ public:
     bool Supports(MemoryPolicy) const noexcept override { return true; }
 };
 
+/**
+ * ESPressio Memory Audit
+ * Members:
+ * - Value (int): 4 bytes [0 bytes dynamic allocation]
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 struct TrackedObject {
     static int Alive;
     int Value = 0;
@@ -41,11 +60,27 @@ struct TrackedObject {
 
 int TrackedObject::Alive = 0;
 
+/**
+ * ESPressio Memory Audit
+ * Members: none; polymorphic/virtual-base object metadata is included in the total.
+ * Total Memory: 4 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 struct PolymorphicBase {
     virtual ~PolymorphicBase() = default;
     virtual int Value() const = 0;
 };
 
+/**
+ * ESPressio Memory Audit
+ * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
+ * Members:
+ * - Stored (int): 4 bytes [0 bytes dynamic allocation]
+ * Total Memory: 8 bytes [0 bytes dynamic allocation]
+ * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
+ * End ESPressio Memory Audit
+ */
 struct PolymorphicDerived final : PolymorphicBase {
     static int Alive;
     int Stored = 0;
