@@ -33,19 +33,18 @@ jobs:
               if not path.is_file() or '.git' in path.parts or path.suffix.lower() not in extensions:
                   continue
               original = path.read_text(encoding='utf-8')
-              count = 0
+              removed_here = []
               def replace(match):
-                  nonlocal count
                   block = match.group(0)
                   if start in block and end in block:
-                      count += 1
+                      removed_here.append(1)
                       return ''
                   return block
               updated = comment.sub(replace, original)
-              if count:
+              if removed_here:
                   path.write_text(updated, encoding='utf-8')
                   changed.append(str(path))
-                  removed += count
+                  removed += len(removed_here)
 
           print(f'Removed {removed} ESPressio Memory Audit blocks from {len(changed)} files')
           for path in changed:
