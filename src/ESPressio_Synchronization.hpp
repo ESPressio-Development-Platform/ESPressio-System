@@ -16,13 +16,7 @@ namespace Synchronization {
 constexpr uint32_t WaitForever = UINT32_MAX;
 
 /// <summary>Abstracts a binary synchronization signal that can be given, waited, and reset.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class ISignal {
 public:
     virtual ~ISignal() = default;
@@ -38,13 +32,7 @@ public:
 };
 
 /// <summary>Abstracts an exclusive non-recursive mutex.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IMutex {
 public:
     virtual ~IMutex() = default;
@@ -57,13 +45,7 @@ public:
 };
 
 /// <summary>Abstracts an exclusive mutex that may be reacquired by its owning execution context.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IRecursiveMutex {
 public:
     virtual ~IRecursiveMutex() = default;
@@ -76,13 +58,7 @@ public:
 };
 
 /// <summary>Abstracts synchronization supporting shared readers and an exclusive writer.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IReadWriteLock {
 public:
     virtual ~IReadWriteLock() = default;
@@ -101,13 +77,7 @@ public:
 };
 
 /// <summary>Creates platform-backed synchronization primitives.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class ISynchronizationProvider {
 public:
     virtual ~ISynchronizationProvider() = default;
@@ -149,16 +119,7 @@ inline void ResetProvider() noexcept {
 
 namespace Detail {
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members:
- * - _mutex (std::mutex): 4 bytes [native synchronization state may allocate platform resources lazily]
- * Total Memory: 8 bytes [_mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class StandardMutex final : public IMutex {
     std::mutex _mutex;
 public:
@@ -167,16 +128,7 @@ public:
     void Unlock() noexcept override { _mutex.unlock(); }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members:
- * - _mutex (std::recursive_mutex): 4 bytes [native synchronization state may allocate platform resources lazily]
- * Total Memory: 8 bytes [_mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class StandardRecursiveMutex final : public IRecursiveMutex {
     std::recursive_mutex _mutex;
 public:
@@ -185,16 +137,7 @@ public:
     void Unlock() noexcept override { _mutex.unlock(); }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members:
- * - _mutex (std::shared_mutex): 4 bytes [native synchronization state may allocate platform resources lazily]
- * Total Memory: 8 bytes [_mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class StandardReadWriteLock final : public IReadWriteLock {
     std::shared_mutex _mutex;
 public:
@@ -207,14 +150,7 @@ public:
 };
 
 /// <summary>Serializes lazy provider resolution without allocating another platform primitive.</summary>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _flag (std::atomic_flag&): 4 bytes [0 bytes dynamic allocation]
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class ResolutionGuard final {
     std::atomic_flag& _flag;
 public:
@@ -228,18 +164,7 @@ public:
 
 /// <summary>Provider-aware non-recursive mutex with a standard C++ fallback.</summary>
 /// <remarks>The platform primitive is created lazily on first use. If no provider is available at that point, the embedded portable fallback is selected permanently for this instance, preserving safe use by process-lifetime objects constructed before platform installation.</remarks>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _owned (std::unique_ptr<IMutex>): 4 bytes [owned object: 4 bytes]
- * - _fallback (Detail::StandardMutex): 8 bytes [_mutex: native synchronization state may allocate platform resources lazily]
- * - _resolved (std::atomic<IMutex*>): 4 bytes [0 bytes dynamic allocation]
- * - _resolutionGuard (std::atomic_flag): 1 bytes [0 bytes dynamic allocation]
- * Total Memory: 20 bytes [_owned: owned object: 4 bytes; _fallback: _mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class Mutex final {
     std::unique_ptr<IMutex> _owned;
     Detail::StandardMutex _fallback;
@@ -272,18 +197,7 @@ public:
 };
 
 /// <summary>Provider-aware recursive mutex with a standard C++ fallback.</summary>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _owned (std::unique_ptr<IRecursiveMutex>): 4 bytes [owned object: 4 bytes]
- * - _fallback (Detail::StandardRecursiveMutex): 8 bytes [_mutex: native synchronization state may allocate platform resources lazily]
- * - _resolved (std::atomic<IRecursiveMutex*>): 4 bytes [0 bytes dynamic allocation]
- * - _resolutionGuard (std::atomic_flag): 1 bytes [0 bytes dynamic allocation]
- * Total Memory: 20 bytes [_owned: owned object: 4 bytes; _fallback: _mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class RecursiveMutex final {
     std::unique_ptr<IRecursiveMutex> _owned;
     Detail::StandardRecursiveMutex _fallback;
@@ -316,18 +230,7 @@ public:
 };
 
 /// <summary>Provider-aware read/write lock with a standard C++ fallback.</summary>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _owned (std::unique_ptr<IReadWriteLock>): 4 bytes [owned object: 4 bytes]
- * - _fallback (Detail::StandardReadWriteLock): 8 bytes [_mutex: native synchronization state may allocate platform resources lazily]
- * - _resolved (std::atomic<IReadWriteLock*>): 4 bytes [0 bytes dynamic allocation]
- * - _resolutionGuard (std::atomic_flag): 1 bytes [0 bytes dynamic allocation]
- * Total Memory: 20 bytes [_owned: owned object: 4 bytes; _fallback: _mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class ReadWriteLock final {
     std::unique_ptr<IReadWriteLock> _owned;
     Detail::StandardReadWriteLock _fallback;
@@ -364,19 +267,7 @@ public:
 
 /// <summary>Lazily resolves a binary signal when a synchronization provider becomes available.</summary>
 /// <remarks>Interrupt-context giving is available only after the underlying signal has already been resolved.</remarks>
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members:
- * - _initiallySet (bool): 1 bytes [0 bytes dynamic allocation]
- * - _signal (std::unique_ptr<ISignal>): 4 bytes [owned object: 4 bytes]
- * - _resolved (std::atomic<ISignal*>): 4 bytes [0 bytes dynamic allocation]
- * - _mutex (Mutex): 20 bytes [_owned: owned object: 4 bytes; _fallback: _mutex: native synchronization state may allocate platform resources lazily]
- * Total Memory: 36 bytes [_signal: owned object: 4 bytes; _mutex: _owned: owned object: 4 bytes; _mutex: _fallback: _mutex: native synchronization state may allocate platform resources lazily]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 class DeferredBinarySignal final : public ISignal {
 private:
     bool _initiallySet = false;

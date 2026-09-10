@@ -16,14 +16,7 @@ using namespace ESPressio::System;
 
 namespace {
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestExecutionProvider final : public Execution::IExecutionProvider {
 public:
     Execution::ExecutionCreationResult Create(
@@ -42,14 +35,7 @@ public:
     bool SupportsProcessorAffinity() const noexcept override { return true; }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestQueueProvider final : public Queue::IQueueProvider {
 public:
     std::unique_ptr<Queue::IMessageQueue> Create(std::size_t, std::size_t) override {
@@ -57,14 +43,7 @@ public:
     }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestSynchronizationProvider final : public Synchronization::ISynchronizationProvider {
 public:
     std::unique_ptr<Synchronization::ISignal> CreateBinarySignal(bool) override {
@@ -72,14 +51,7 @@ public:
     }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestGPIOController final : public GPIO::IController {
 public:
     PlatformResult Configure(GPIO::Pin, const GPIO::PinConfiguration&) noexcept override {
@@ -102,14 +74,7 @@ public:
     bool SupportsInterruptAffinity() const noexcept override { return false; }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestMonotonicClock final : public Clock::IMonotonicClock {
 public:
     uint64_t NowNanoseconds() const noexcept override { return 42; }
@@ -117,14 +82,7 @@ public:
     bool IsInterruptSafe() const noexcept override { return true; }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestHighResolutionProvider final : public Clock::IHighResolutionCounterProvider {
 public:
     std::unique_ptr<Clock::IHighResolutionCounter> Create(uint64_t) override {
@@ -132,14 +90,7 @@ public:
     }
 };
 
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class TestEntropySource final : public Entropy::IEntropySource {
 public:
     PlatformResult Fill(void*, std::size_t) noexcept override {

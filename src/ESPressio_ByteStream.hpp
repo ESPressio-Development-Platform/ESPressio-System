@@ -11,13 +11,7 @@ namespace System {
 namespace IO {
 
 /// <summary>Provides a byte-oriented input abstraction for platform streams and devices.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IByteInput {
 public:
     virtual ~IByteInput() = default;
@@ -33,13 +27,7 @@ public:
 };
 
 /// <summary>Provides a byte-oriented output abstraction for platform streams and devices.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IByteOutput {
 public:
     virtual ~IByteOutput() = default;
@@ -91,14 +79,7 @@ public:
 };
 
 /// <summary>Combines byte-oriented input and output into a bidirectional stream contract.</summary>
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 8 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 8 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IByteStream : public IByteInput, public IByteOutput {
 public:
     ~IByteStream() override = default;

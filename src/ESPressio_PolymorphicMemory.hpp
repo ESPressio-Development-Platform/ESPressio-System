@@ -10,15 +10,7 @@ namespace ESPressio::System::Memory {
 
 /// <summary>Destroys a polymorphic object through the exact derived type and memory provider that created it.</summary>
 /// <typeparam name="TBase">Base interface type exposed by the owning pointer.</typeparam>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _provider (IMemoryProvider*): 4 bytes [0 bytes dynamic allocation]
- * - _destroy (DestroyFunction): 4 bytes [0 bytes dynamic allocation]
- * Total Memory: 8 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 template<typename TBase>
 class PolymorphicObjectDeleter {
 public:

@@ -15,26 +15,14 @@ namespace GPIO {
 using Pin = uint16_t;
 
 /// <summary>Logical GPIO signal level.</summary>
-/**
- * ESPressio Memory Audit
- * Underlying storage: 1 bytes
- * Total Memory: 1 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 enum class State : uint8_t {
     Low = 0,
     High = 1
 };
 
 /// <summary>Configures the electrical direction of a GPIO pin.</summary>
-/**
- * ESPressio Memory Audit
- * Underlying storage: 1 bytes
- * Total Memory: 1 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 enum class Direction : uint8_t {
     Input,
     Output,
@@ -42,13 +30,7 @@ enum class Direction : uint8_t {
 };
 
 /// <summary>Configures an optional GPIO pull resistor.</summary>
-/**
- * ESPressio Memory Audit
- * Underlying storage: 1 bytes
- * Total Memory: 1 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 enum class Pull : uint8_t {
     None,
     Up,
@@ -57,13 +39,7 @@ enum class Pull : uint8_t {
 };
 
 /// <summary>Specifies the signal condition that triggers a GPIO interrupt.</summary>
-/**
- * ESPressio Memory Audit
- * Underlying storage: 1 bytes
- * Total Memory: 1 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 enum class InterruptTrigger : uint8_t {
     RisingEdge,
     FallingEdge,
@@ -73,16 +49,7 @@ enum class InterruptTrigger : uint8_t {
 };
 
 /// <summary>Describes the direction, pull configuration, and initial level for a GPIO pin.</summary>
-/**
- * ESPressio Memory Audit
- * Members:
- * - DirectionMode (Direction): 1 bytes [0 bytes dynamic allocation]
- * - PullMode (Pull): 1 bytes [0 bytes dynamic allocation]
- * - InitialState (State): 1 bytes [0 bytes dynamic allocation]
- * Total Memory: 3 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 struct PinConfiguration {
     /// <summary>Requested GPIO direction.</summary>
     Direction DirectionMode = Direction::Input;
@@ -93,16 +60,7 @@ struct PinConfiguration {
 };
 
 /// <summary>Describes the trigger, affinity, and initial enabled state of a GPIO interrupt.</summary>
-/**
- * ESPressio Memory Audit
- * Members:
- * - Trigger (InterruptTrigger): 1 bytes [0 bytes dynamic allocation]
- * - Affinity (ProcessorAffinity): 2 bytes [0 bytes dynamic allocation]
- * - StartEnabled (bool): 1 bytes [0 bytes dynamic allocation]
- * Total Memory: 6 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 struct InterruptConfiguration {
     /// <summary>Signal condition that causes the interrupt.</summary>
     InterruptTrigger Trigger = InterruptTrigger::AnyEdge;
@@ -116,13 +74,7 @@ struct InterruptConfiguration {
 using InterruptCallback = void (*)(void* context);
 
 /// <summary>Represents a configured GPIO interrupt and exposes its runtime lifecycle.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IInterrupt {
 public:
     virtual ~IInterrupt() = default;
@@ -144,16 +96,7 @@ public:
 using InterruptHandle = std::unique_ptr<IInterrupt>;
 
 /// <summary>Contains the outcome and optional handle returned when creating a GPIO interrupt.</summary>
-/**
- * ESPressio Memory Audit
- * Members:
- * - Result (PlatformResult): 8 bytes [0 bytes dynamic allocation]
- * - Handle (InterruptHandle): 4 bytes [owned object: 4 bytes]
- * Total Memory: 12 bytes [Handle: owned object: 4 bytes]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * Confidence: medium; compile-time sizeof on the concrete target remains authoritative for ABI-sensitive/opaque members.
- * End ESPressio Memory Audit
- */
+
 struct InterruptCreationResult {
     /// <summary>The platform operation result.</summary>
     PlatformResult Result = PlatformResult::Failed(PlatformStatus::Unavailable);
@@ -182,13 +125,7 @@ struct InterruptCreationResult {
 };
 
 /// <summary>Abstracts platform GPIO configuration, I/O, and interrupt creation.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IController {
 public:
     virtual ~IController() = default;

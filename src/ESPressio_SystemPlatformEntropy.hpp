@@ -11,13 +11,7 @@ namespace System {
 namespace Entropy {
 
 /// <summary>Provides platform entropy bytes and reports whether they are suitable for cryptographic use.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IEntropySource {
 public:
     virtual ~IEntropySource() = default;
@@ -33,14 +27,7 @@ public:
 };
 
 /// <summary>Fallback entropy source that reports entropy services as unavailable.</summary>
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class NullEntropySource final : public IEntropySource {
 public:
     /// <inheritdoc/>

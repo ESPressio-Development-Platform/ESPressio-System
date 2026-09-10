@@ -18,13 +18,7 @@
 namespace ESPressio::System::Memory {
 
 /// <summary>Specifies the memory region preference or requirement for an allocation.</summary>
-/**
- * ESPressio Memory Audit
- * Underlying storage: 1 bytes
- * Total Memory: 1 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 enum class MemoryPolicy : unsigned char {
     Automatic = 0,
     Internal,
@@ -33,13 +27,7 @@ enum class MemoryPolicy : unsigned char {
 };
 
 /// <summary>Abstracts policy-aware allocation and deallocation supplied by the active platform.</summary>
-/**
- * ESPressio Memory Audit
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class IMemoryProvider {
 public:
     virtual ~IMemoryProvider() = default;
@@ -73,14 +61,7 @@ public:
 };
 
 /// <summary>Portable fallback provider backed by the standard C++ allocation operators.</summary>
-/**
- * ESPressio Memory Audit
- * Inherited Memory Total: 4 bytes [0 bytes dynamic allocation]
- * Members: none; polymorphic/virtual-base object metadata is included in the total.
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 class DefaultMemoryProvider final : public IMemoryProvider {
 public:
     void* Allocate(std::size_t bytes, std::size_t alignment, MemoryPolicy) override {
@@ -153,14 +134,7 @@ inline bool ConfigureAutomaticExternalPreference(std::size_t minimumBytes) noexc
 /// is installed without becoming permanently bound to the portable fallback heap. Once an allocator performs an
 /// allocation it retains that provider so the matching deallocation always returns storage to the correct heap.
 /// </remarks>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _provider (IMemoryProvider*): 4 bytes [0 bytes dynamic allocation]
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 template<typename T, MemoryPolicy Policy = MemoryPolicy::Automatic>
 class Allocator {
 public:
@@ -168,13 +142,7 @@ public:
     using is_always_equal = std::false_type;
     using propagate_on_container_move_assignment = std::true_type;
     using propagate_on_container_swap = std::true_type;
-/**
- * ESPressio Memory Audit
- * Members: none (standalone empty object occupies 1 byte; an eligible empty base may be optimized to 0 bytes).
- * Total Memory: 1 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 template<typename U> struct rebind { using other = Allocator<U, Policy>; };
 
     /// <summary>Creates an allocator that binds to the active provider on its first allocation.</summary>
@@ -230,14 +198,7 @@ template<MemoryPolicy P = MemoryPolicy::Automatic> using ByteVector = Vector<uns
 /// <summary>Destroys and releases one object through the provider and policy that allocated it.</summary>
 /// <typeparam name="T">Object type owned by the deleter.</typeparam>
 /// <typeparam name="P">Memory policy used for the object allocation.</typeparam>
-/**
- * ESPressio Memory Audit
- * Members:
- * - _provider (IMemoryProvider*): 4 bytes [0 bytes dynamic allocation]
- * Total Memory: 4 bytes [0 bytes dynamic allocation]
- * Basis: ESP32/Xtensa ILP32 reference ABI (4-byte pointers/size_t); ESPressio stateful allocators/deleters included; ABI-sensitive STL/platform internals are identified explicitly.
- * End ESPressio Memory Audit
- */
+
 template<typename T, MemoryPolicy P = MemoryPolicy::Automatic>
 class ObjectDeleter {
 public:
