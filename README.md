@@ -2,8 +2,6 @@
 
 Platform-neutral hardware and runtime concepts expressed in the language of the ESPressio platform.
 
-**Release target:** `0.1.0`
-
 ESPressio System is the hardware/runtime abstraction boundary at the base of the ESPressio dependency graph. Higher-level libraries can express requirements such as memory policy, execution, clocking, synchronization, bounded queues and GPIO without depending directly on ESP32, ESP-IDF, Arduino, FreeRTOS or another target implementation.
 
 System deliberately does **not** own higher-level domain concepts such as WiFi lifecycle, ESP-NOW transport, event dispatch or command routing. Those abstractions remain with their respective libraries. Concrete target implementations belong in platform libraries such as `ESPressio-ESP32`.
