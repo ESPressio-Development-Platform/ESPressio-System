@@ -205,7 +205,7 @@ lib_deps =
     https://github.com/ESPressio-Development-Platform/ESPressio-System.git#main
 ```
 
-During the release restructuring, consumers should use the repository's `main` branch until the new platform-wide 1.0.0 release generation is published.
+During the release restructuring, consumers should use the repository's `main` branch until the new platform-wide release generation is published.
 
 ## Design guarantees
 
@@ -218,7 +218,3 @@ During the release restructuring, consumers should use the repository's `main` b
 - Existing memory-policy semantics remain preserved.
 
 ## Auditing and testing
-
-`PLATFORM_ABSTRACTIONS.md` records the platform-abstraction tranche chronologically. Host regression coverage validates canonical identity, memory-provider behaviour and the portable platform contracts; provider-specific repositories validate the target implementations.
-
-See `OPTIMISATIONS.md` for the chronological memory-policy implementation history and `CHANGELOG.md` for release-facing changes.
