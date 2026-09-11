@@ -34,6 +34,40 @@ DeviceIdentifier device(bytes);
 
 Platform libraries are responsible for obtaining a stable default identity from the target where appropriate. For ESP32, the platform implementation may derive the default from factory device identity/Wi-Fi MAC through a stable namespaced transformation, while applications may override it with their own persisted identifier. Hardware APIs and target-specific identity acquisition remain outside System.
 
+## Immutable runtime identity
+
+`RuntimeIncarnationId` is an exact unsigned 32-bit value. Zero is invalid and `0xFFFFFFFF` is the final valid value; allocation must fail after exhaustion. It exposes explicit construction, `Value()`, explicit validity conversion, equality/inequality and scalar ordering. It has no increment/reset operation.
+
+`DeviceRuntimeIdentity` contains only `Device` (16-byte `DeviceIdentifier`) and `Incarnation` (4-byte `RuntimeIncarnationId`), with validity and equality operations.
+
+Persistence must durably allocate a fresh incarnation **once per actual process boot**, before System installation. Restarting a Thread, transport or family service does not allocate another incarnation. System owns the immutable installed identity and has no Persistence dependency.
+
+```cpp
+#include <ESPressio_RuntimeIdentity.hpp>
+namespace S = ESPressio::System;
+
+// Bootstrap receives these values only after the Persistence allocator commits.
+void InstallDurablyAllocatedIdentity(S::DeviceIdentifier device,
+                                    S::RuntimeIncarnationId committed) {
+    const S::DeviceRuntimeIdentity candidate{device, committed};
+    const auto result = S::RuntimeIdentity::Install(candidate);
+    if (result == S::RuntimeIdentity::InstallationStatus::InvalidIdentity) {
+        // Keep identity-dependent Transmissible services unavailable.
+    }
+    // Success publishes the complete value; AlreadyInstalled changes nothing.
+}
+
+bool ReadRuntimeIdentity(S::DeviceRuntimeIdentity& output) {
+    return S::RuntimeIdentity::TryRead(output); // Unavailable leaves output unchanged.
+}
+```
+
+`RuntimeIdentity::TryGet()` returns a const process-lifetime pointer or null. `IsInstalled()` reports availability. Reads do not allocate, wait, query persistence or invoke callbacks. Concurrent installers have exactly one winner, and acquire/release publication prevents readers from seeing partial identity. The identity cannot be cleared or replaced. After successful installation, loss of persistence availability does not invalidate it.
+
+Missing/corrupt/ambiguous persistent allocation must not be replaced by a random or zero identity. Local-only operation can continue without an installed identity; Transmissible bootstrap fails closed. Provisioning and identity-domain reset rules belong to Persistence.
+
+Resident semantic identity storage is exactly 20 bytes plus one publication atomic and its target alignment/implementation cost. No heap, task, stack or per-read copy is required by `TryGet()`. `TryRead()` copies into caller-owned storage.
+
 ## Platform result and processor affinity
 
 `ESPressio_Platform.hpp` provides common platform vocabulary:
@@ -71,7 +105,7 @@ Memory providers are installed with:
 System::Memory::SetProvider(&provider);
 ```
 
-Allocator objects capture the active provider when constructed so allocation and deallocation remain paired correctly. Install a specialised provider before constructing allocator-aware global objects.
+Allocator objects bind the active provider when they first request storage, so allocation and deallocation remain paired correctly even if the active provider later changes. Install a specialised provider before the first allocation.
 
 ## Execution
 
@@ -126,7 +160,7 @@ The queue intentionally works in terms of fixed element size and copied message 
 
 ## Monotonic clocks and high-resolution counters
 
-`ESPressio_Clock.hpp` separates two related concepts:
+`ESPressio_SystemPlatformClock.hpp` separates two related concepts:
 
 - `IMonotonicClock` provides monotonically increasing nanosecond timestamps;
 - `IHighResolutionCounter` represents a dedicated high-resolution hardware counter with start/stop/reset/read lifecycle.
@@ -200,10 +234,10 @@ This keeps System from becoming a catch-all service library while preserving a c
 
 ```ini
 lib_deps =
-    https://github.com/ESPressio-Development-Platform/ESPressio-System.git#main
+    https://github.com/ESPressio-Development-Platform/ESPressio-System.git#primitives_redesign
 ```
 
-During the release restructuring, consumers should use the repository's `main` branch until the new platform-wide release generation is published.
+Coordinated redesign consumers use `primitives_redesign`; versioning and release integration are separate.
 
 ## Design guarantees
 
@@ -216,3 +250,5 @@ During the release restructuring, consumers should use the repository's `main` b
 - Existing memory-policy semantics remain preserved.
 
 ## Auditing and testing
+
+The four existing tests were semantically reviewed for this change: device scalar identity, allocator/provider pairing, platform abstractions and provider publication remain valid. Runtime identity tests add invalid/unavailable, install-once, final-incarnation value and concurrent whole-value publication coverage.

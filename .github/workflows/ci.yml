@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - structural_realignment
-      - 'structural_realignment_propagation*'
+      - primitives_redesign
       - 'feature/**'
       - 'optimisation/**'
   pull_request:
@@ -31,3 +30,9 @@ jobs:
         run: g++ -std=c++17 -Wall -Wextra -Werror -pthread -fsanitize=thread -fno-omit-frame-pointer -Isrc tests/provider_publication_test.cpp -o provider_publication_test
       - name: Run provider-publication regression with ThreadSanitizer
         run: ./provider_publication_test
+      - name: Build and run runtime identity contracts
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/runtime_identity_test.cpp -o runtime_identity_test
+          ./runtime_identity_test
+          g++ -std=c++17 -Wall -Wextra -Werror -pthread -Isrc tests/runtime_identity_concurrency_test.cpp -o runtime_identity_concurrency_test
+          ./runtime_identity_concurrency_test
