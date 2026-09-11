@@ -75,6 +75,25 @@ public:
         const ExecutionConfiguration& configuration
     ) = 0;
 
+    /// <summary>Creates a context whose entry may return normally and whose resources are retained until Join.</summary>
+    /// <remarks>The provider owns the entry trampoline and completion control storage, allocated only during creation.
+    /// A returned entry has finished all accesses to its caller context. Handle identity remains valid until Join.
+    /// Providers without cooperative joining reject this request; ordinary Create/Destroy is not a substitute.</remarks>
+    virtual ExecutionCreationResult CreateJoinable(
+        ExecutionEntry, void*, const ExecutionConfiguration&
+    ) {
+        return {PlatformResult::Failed(PlatformStatus::Unsupported), InvalidExecutionHandle};
+    }
+
+    /// <summary>Waits for a joinable entry to return, then releases its execution/control resources.</summary>
+    /// <remarks>Exactly one external owner joins each successful CreateJoinable result. Joining never terminates,
+    /// suspends or cancels the entry. Self-join fails with InvalidArgument. Successful return is a synchronization
+    /// boundary for all entry writes and guarantees no further entry/trampoline access to caller-owned context.
+    /// Destroy must not be used on a joinable context. Providers retain the handle if joining fails.</remarks>
+    virtual PlatformResult Join(ExecutionHandle) {
+        return PlatformResult::Failed(PlatformStatus::Unsupported);
+    }
+
     /// <summary>Destroys the specified execution context.</summary>
     virtual PlatformResult Destroy(ExecutionHandle handle) = 0;
     /// <summary>Suspends the specified execution context.</summary>

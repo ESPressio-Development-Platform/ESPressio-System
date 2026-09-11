@@ -252,3 +252,31 @@ Coordinated redesign consumers use `primitives_redesign`; versioning and release
 ## Auditing and testing
 
 The four existing tests were semantically reviewed for this change: device scalar identity, allocator/provider pairing, platform abstractions and provider publication remain valid. Runtime identity tests add invalid/unavailable, install-once, final-incarnation value and concurrent whole-value publication coverage.
+
+## Cooperative execution completion
+
+Persistent discrete-work owners use `IExecutionProvider::CreateJoinable` and `Join`.
+The provider retains execution/completion resources until the entry returns and its
+single external owner joins. No forceful cancellation occurs. Providers without
+this capability return `Unsupported`; callers must not substitute `Destroy`.
+Completion control storage is part of the declared platform execution resource cost.
+
+```cpp
+#include <ESPressio_Execution.hpp>
+void RunJoinedWork() {
+    using namespace ESPressio::System::Execution;
+    int result = 0;
+    auto& provider = Provider(); // installation stays fixed for this context's lifetime
+    auto created = provider.CreateJoinable(
+        [](void* context) { *static_cast<int*>(context) = 42; }, &result, {});
+    if (created) {
+        const auto joined = provider.Join(created.Handle);
+        // On success, result == 42 and the provider has released the context.
+        (void)joined;
+    }
+}
+```
+
+The caller context must remain alive until a successful join. Self-join is invalid.
+The Task T1 worker supplies executable host coverage with a controllable joinable
+provider; ESP32's concrete implementation belongs to the platform migration.

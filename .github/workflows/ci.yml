@@ -36,3 +36,7 @@ jobs:
           ./runtime_identity_test
           g++ -std=c++17 -Wall -Wextra -Werror -pthread -Isrc tests/runtime_identity_concurrency_test.cpp -o runtime_identity_concurrency_test
           ./runtime_identity_concurrency_test
+      - name: Build and run cooperative execution fallback contract
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/joinable_execution_test.cpp -o joinable_execution_test
+          ./joinable_execution_test
