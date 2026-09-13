@@ -15,6 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Enforce absolute-base dependency boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path('library.json').read_text())
+          dependencies = manifest.get('dependencies', [])
+          if dependencies:
+              raise SystemExit(f'ESPressio-System must have zero ESPressio dependencies; found: {dependencies!r}')
+
+          cmake = Path('CMakeLists.txt').read_text()
+          forbidden = ('REQUIRES', 'PRIV_REQUIRES', 'target_link_libraries')
+          found = [token for token in forbidden if token in cmake]
+          if found:
+              raise SystemExit(f'ESPressio-System must remain an absolute-base library; forbidden CMake dependency directives: {found}')
+          PY
       - name: Build and run DeviceIdentifier regression
         run: |
           g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/device_identifier_test.cpp -o device_identifier_test
