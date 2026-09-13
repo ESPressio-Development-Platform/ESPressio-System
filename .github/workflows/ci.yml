@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - primitives_redesign
+      - composition_framework
       - 'feature/**'
       - 'optimisation/**'
   pull_request:
@@ -14,29 +15,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build DeviceIdentifier regression
-        run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/device_identifier_test.cpp -o device_identifier_test
-      - name: Run DeviceIdentifier regression
-        run: ./device_identifier_test
-      - name: Build memory-policy regression
-        run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/memory_policy_test.cpp -o memory_policy_test
-      - name: Run memory-policy regression
-        run: ./memory_policy_test
-      - name: Build platform-abstraction regression
-        run: g++ -std=c++17 -Wall -Wextra -Werror -Isrc tests/platform_abstractions_test.cpp -o platform_abstractions_test
-      - name: Run platform-abstraction regression
-        run: ./platform_abstractions_test
-      - name: Build provider-publication regression with ThreadSanitizer
-        run: g++ -std=c++17 -Wall -Wextra -Werror -pthread -fsanitize=thread -fno-omit-frame-pointer -Isrc tests/provider_publication_test.cpp -o provider_publication_test
-      - name: Run provider-publication regression with ThreadSanitizer
-        run: ./provider_publication_test
+      - name: Build and run DeviceIdentifier regression
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/device_identifier_test.cpp -o device_identifier_test
+          ./device_identifier_test
       - name: Build and run runtime identity contracts
         run: |
           g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/runtime_identity_test.cpp -o runtime_identity_test
           ./runtime_identity_test
           g++ -std=c++17 -Wall -Wextra -Werror -pthread -Isrc tests/runtime_identity_concurrency_test.cpp -o runtime_identity_concurrency_test
           ./runtime_identity_concurrency_test
-      - name: Build and run cooperative execution fallback contract
+      - name: Build and run Composition Framework contract
         run: |
-          g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/joinable_execution_test.cpp -o joinable_execution_test
-          ./joinable_execution_test
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic -fno-rtti -fno-exceptions -Isrc tests/composition_framework_test.cpp -o composition_framework_test
+          ./composition_framework_test
+      - name: Verify public header self-containment
+        run: |
+          set -e
+          for header in src/*.hpp; do
+            printf '#include "%s"\nint main(){return 0;}\n' "$(basename "$header")" > /tmp/header_test.cpp
+            g++ -std=c++17 -Wall -Wextra -Werror -pedantic -fno-rtti -fno-exceptions -Isrc /tmp/header_test.cpp -o /tmp/header_test
+          done
+      - name: Verify Composition Framework negative contracts
+        run: |
+          set -e
+          for source in tests/negative/*.cpp; do
+            output="$(basename "${source%.cpp}")"
+            if g++ -std=c++17 -Wall -Wextra -Werror -pedantic -fno-rtti -fno-exceptions -Isrc "$source" -o "$output" >"$output.log" 2>&1; then
+              echo "Negative contract unexpectedly compiled: $source"
+              cat "$output.log"
+              exit 1
+            fi
+          done

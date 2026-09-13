@@ -1,282 +1,58 @@
-# ESPressio System
+# ESPressio-System
 
-Platform-neutral hardware and runtime concepts expressed in the language of the ESPressio platform.
+`ESPressio-System` is the absolute dependency root of the ESPressio Development Platform.
 
-ESPressio System is the hardware/runtime abstraction boundary at the base of the ESPressio dependency graph. Higher-level libraries can express requirements such as memory policy, execution, clocking, synchronization, bounded queues and GPIO without depending directly on ESP32, ESP-IDF, Arduino, FreeRTOS or another target implementation.
+It has exactly two responsibilities:
 
-System deliberately does **not** own higher-level domain concepts such as WiFi lifecycle, ESP-NOW transport, event dispatch or command routing. Those abstractions remain with their respective libraries. Concrete target implementations belong in platform libraries such as `ESPressio-ESP32`.
+1. canonical device/runtime identity semantics; and
+2. the domain-neutral compile-time Composition Framework used by higher ESPressio domains.
 
-## When to use it
+## Dependency rule
 
-Most applications do not need to interact with every System interface directly. Add it explicitly when you are:
+`ESPressio-System` must never declare or consume any other ESPressio library dependency.
 
-- writing an ESPressio library that needs a hardware/runtime capability;
-- providing a target-platform implementation;
-- using allocator-aware containers directly;
-- consuming GPIO or another System capability directly from application code.
+Higher libraries depend downward on System. System never depends upward on Platform, Primitive, Task, Threads, Serializable, Persistence, Security, OTA, Radio, Mesh, or any other ESPressio domain.
 
-On ESP32, use `ESPressio-ESP32` alongside this library to install the concrete providers.
+## Identity
 
-## Canonical device identity
+System owns:
 
-`ESPressio_DeviceIdentifier.hpp` defines the permanent transport-independent device identity shared across the platform:
+- `DeviceIdentifier` — stable 128-bit device identity;
+- `RuntimeIncarnationId` — non-zero 32-bit identity for one actual process/runtime boot;
+- `DeviceRuntimeIdentity` — `{DeviceIdentifier, RuntimeIncarnationId}`;
+- `RuntimeIdentity` — process-wide immutable publication of the installed runtime identity.
 
-```cpp
-#include <ESPressio_DeviceIdentifier.hpp>
+Persistence may allocate and durably commit a runtime incarnation before installing it into `RuntimeIdentity`, but System has no Persistence dependency and cannot inspect persistence.
 
-using ESPressio::System::DeviceIdentifier;
+## Composition Framework
 
-DeviceIdentifier::Storage bytes = {/* persisted or platform-derived 16 bytes */};
-DeviceIdentifier device(bytes);
-```
-
-`DeviceIdentifier` is an exact 16-byte value. The all-zero representation is Invalid/Unspecified. It is identity rather than a Radio address or an authentication credential, so higher-level libraries must not derive authority merely from possession of a DeviceIdentifier.
-
-Platform libraries are responsible for obtaining a stable default identity from the target where appropriate. For ESP32, the platform implementation may derive the default from factory device identity/Wi-Fi MAC through a stable namespaced transformation, while applications may override it with their own persisted identifier. Hardware APIs and target-specific identity acquisition remain outside System.
-
-## Immutable runtime identity
-
-`RuntimeIncarnationId` is an exact unsigned 32-bit value. Zero is invalid and `0xFFFFFFFF` is the final valid value; allocation must fail after exhaustion. It exposes explicit construction, `Value()`, explicit validity conversion, equality/inequality and scalar ordering. It has no increment/reset operation.
-
-`DeviceRuntimeIdentity` contains only `Device` (16-byte `DeviceIdentifier`) and `Incarnation` (4-byte `RuntimeIncarnationId`), with validity and equality operations.
-
-Persistence must durably allocate a fresh incarnation **once per actual process boot**, before System installation. Restarting a Thread, transport or family service does not allocate another incarnation. System owns the immutable installed identity and has no Persistence dependency.
+The reusable framework is exposed in:
 
 ```cpp
-#include <ESPressio_RuntimeIdentity.hpp>
-namespace S = ESPressio::System;
-
-// Bootstrap receives these values only after the Persistence allocator commits.
-void InstallDurablyAllocatedIdentity(S::DeviceIdentifier device,
-                                    S::RuntimeIncarnationId committed) {
-    const S::DeviceRuntimeIdentity candidate{device, committed};
-    const auto result = S::RuntimeIdentity::Install(candidate);
-    if (result == S::RuntimeIdentity::InstallationStatus::InvalidIdentity) {
-        // Keep identity-dependent Transmissible services unavailable.
-    }
-    // Success publishes the complete value; AlreadyInstalled changes nothing.
-}
-
-bool ReadRuntimeIdentity(S::DeviceRuntimeIdentity& output) {
-    return S::RuntimeIdentity::TryRead(output); // Unavailable leaves output unchanged.
-}
+ESPressio::System::CompositionFramework
 ```
 
-`RuntimeIdentity::TryGet()` returns a const process-lifetime pointer or null. `IsInstalled()` reports availability. Reads do not allocate, wait, query persistence or invoke callbacks. Concurrent installers have exactly one winner, and acquire/release publication prevents readers from seeing partial identity. The identity cannot be cleared or replaced. After successful installation, loss of persistence availability does not invalidate it.
+The framework owns only generic compile-time mechanics:
 
-Missing/corrupt/ambiguous persistent allocation must not be replaced by a random or zero identity. Local-only operation can continue without an installed identity; Transmissible bootstrap fails closed. Provisioning and identity-domain reset rules belong to Persistence.
+- domain identity;
+- exclusive/shared capability categories;
+- capability profiles and sets;
+- properties and property constraints;
+- requirement sets;
+- provider declarations;
+- provider lists;
+- composition validation and provider resolution.
 
-Resident semantic identity storage is exactly 20 bytes plus one publication atomic and its target alignment/implementation cost. No heap, task, stack or per-read copy is required by `TryGet()`. `TryRead()` copies into caller-owned storage.
+Semantic domains define their own domain tags and re-export the framework vocabulary under their own namespaces. For example, normal consumers should use `Platform::Composition<>` or `OTA::Composition<>`, not manually assemble another domain's composition.
 
-## Platform result and processor affinity
+Domain identity is part of every framework contract. A capability or requirement from one domain cannot satisfy another domain's composition accidentally.
 
-`ESPressio_Platform.hpp` provides common platform vocabulary:
+`ProviderListFor<Capability>` exposes all providers for a shared capability in declaration order. That order is structural only and conveys no priority, failover, scheduling, or policy meaning.
 
-```cpp
-using ESPressio::System::PlatformResult;
-using ESPressio::System::PlatformStatus;
-using ESPressio::System::ProcessorAffinity;
-```
+`ProviderFor<Capability>` is valid only when exactly one provider supplies the capability.
 
-`PlatformResult` keeps native SDK error types out of higher-level APIs while retaining an optional integer native diagnostic code. `ProcessorAffinity` can represent either any processor or a requested specific processor/core without assuming every target supports affinity.
+## What System no longer owns
 
-## Memory policies
+Platform/SDK abstractions are owned by `ESPressio-Platform`, including execution, synchronization, queueing, memory, clock, entropy, GPIO, byte streams and related platform-provider mechanisms.
 
-```cpp
-#include <ESPressio_Memory.hpp>
-
-using ESPressio::System::Memory::MemoryPolicy;
-```
-
-| Policy | Meaning |
-| --- | --- |
-| `Automatic` | Let the installed platform provider choose its normal allocation strategy. |
-| `Internal` | Request internal/system memory. |
-| `ExternalPreferred` | Prefer external memory, but permit provider fallback. |
-| `ExternalRequired` | Require external memory. |
-
-The built-in default provider uses normal C++ allocation so host tests and non-specialised platforms remain usable.
-
-System supplies STL-compatible allocator aliases including `Vector`, `Deque`, `Map`, `UnorderedMap`, `String` and `MakeShared`.
-
-Memory providers are installed with:
-
-```cpp
-System::Memory::SetProvider(&provider);
-```
-
-Allocator objects bind the active provider when they first request storage, so allocation and deallocation remain paired correctly even if the active provider later changes. Install a specialised provider before the first allocation.
-
-## Execution
-
-`ESPressio_Execution.hpp` defines the primitive execution capability beneath higher-level libraries such as ESPressio-Task and ESPressio-Threads.
-
-The contract covers:
-
-- execution creation and destruction;
-- suspend and resume;
-- current execution identity;
-- stack high-water/free-stack telemetry;
-- processor-count discovery;
-- sleep and yield;
-- optional processor affinity.
-
-Execution handles are opaque ESPressio values. Native RTOS task handles must not leak through this API.
-
-A platform implementation installs an `IExecutionProvider` with:
-
-```cpp
-System::Execution::SetProvider(&provider);
-```
-
-The provider reports `ProcessorCount()` separately from `SupportsProcessorAffinity()`: a platform may expose multiple processors while still being unable to guarantee the requested execution-placement semantics.
-
-## Synchronization signals
-
-`ESPressio_Synchronization.hpp` exposes a binary `ISignal` suitable for lifecycle handshakes and callback/interrupt-to-task signalling.
-
-```cpp
-auto signal = ESPressio::System::Synchronization::CreateBinarySignal();
-```
-
-Signals support ordinary signalling, interrupt-context signalling, timeout-aware waiting and reset. Native semaphore/event types remain inside the platform implementation.
-
-## Bounded message queues
-
-`ESPressio_Queue.hpp` exposes a fixed-element bounded queue abstraction for cross-execution-context message passing.
-
-```cpp
-auto queue = ESPressio::System::Queue::Create<MyMessage>(8);
-```
-
-The queue supports:
-
-- timeout-aware `Send()` and `Receive()`;
-- non-blocking operation with a zero timeout;
-- `SendFromInterrupt()` for ISR/callback producers;
-- reset, capacity and current-size inspection.
-
-The queue intentionally works in terms of fixed element size and copied message values. Higher-level ownership/move semantics remain the responsibility of the consuming domain rather than being hidden behind an RTOS-specific queue contract.
-
-## Monotonic clocks and high-resolution counters
-
-`ESPressio_SystemPlatformClock.hpp` separates two related concepts:
-
-- `IMonotonicClock` provides monotonically increasing nanosecond timestamps;
-- `IHighResolutionCounter` represents a dedicated high-resolution hardware counter with start/stop/reset/read lifecycle.
-
-A portable `std::chrono::steady_clock` monotonic fallback is provided for host use. Hardware-target providers can install a more appropriate monotonic clock and a high-resolution counter provider.
-
-This distinction allows Timing and other libraries to request the semantic capability they need without knowing whether ESP32 `esp_timer`, GPTimer, or another target facility provides it.
-
-## GPIO
-
-`ESPressio_GPIO.hpp` defines ESPressio-native concepts for:
-
-- pin identity;
-- input/output/open-drain direction;
-- pull-up/down configuration;
-- digital state;
-- edge and level interrupt triggers;
-- interrupt lifecycle;
-- optional processor affinity.
-
-Example:
-
-```cpp
-#include <ESPressio_GPIO.hpp>
-
-using namespace ESPressio::System::GPIO;
-
-auto* gpio = Controller();
-if (gpio != nullptr) {
-    gpio->Configure(26, {Direction::Output, Pull::None, State::Low});
-    gpio->Write(26, State::High);
-}
-```
-
-### Interrupt lifecycle
-
-Interrupt creation returns an explicit status together with a move-only RAII handle:
-
-```cpp
-auto created = gpio->CreateInterrupt(
-    26,
-    {InterruptTrigger::RisingEdge, ProcessorAffinity::Any(), true},
-    callback,
-    context
-);
-
-if (created) {
-    auto interrupt = std::move(created.Handle);
-    // interrupt->Disable();
-    // interrupt->Enable();
-}
-```
-
-The handle owns the registration. Destroying/resetting the handle detaches and destroys the interrupt through the concrete provider. `Enable()` and `Disable()` allow the registration to remain owned while temporarily inactive.
-
-Specific processor affinity is a request, not a universal guarantee. Providers expose `SupportsInterruptAffinity()` and may return `Unsupported` or `Conflict` when a requested affinity cannot be satisfied. Returning `InterruptCreationResult` ensures those causes are not collapsed into an unexplained null handle.
-
-## Provider ownership rule
-
-System owns abstractions for hardware/runtime capabilities that make sense independently of a higher-level feature domain. Feature libraries own their own contextual platform interfaces.
-
-For example:
-
-- permanent transport-independent `DeviceIdentifier`, memory, clocks, GPIO, primitive execution, synchronization and bounded queues belong in System;
-- `IWiFiPlatform` belongs in ESPressio-WiFi;
-- ESP32 implementations of both System and WiFi contracts belong in ESPressio-ESP32.
-
-This keeps System from becoming a catch-all service library while preserving a clean dependency-inversion boundary.
-
-## Installation during coordinated development
-
-```ini
-lib_deps =
-    https://github.com/ESPressio-Development-Platform/ESPressio-System.git#primitives_redesign
-```
-
-Coordinated redesign consumers use `primitives_redesign`; versioning and release integration are separate.
-
-## Design guarantees
-
-- No ESP32, Arduino, FreeRTOS or ESP-IDF dependency in the abstraction layer.
-- Canonical `DeviceIdentifier` is an exact fixed 16-byte transport-independent value.
-- No RTTI requirement.
-- Native platform handles/types are hidden behind ESPressio vocabulary.
-- Higher-level domain abstractions remain owned by their domain libraries.
-- Concrete hardware/runtime behaviour belongs in a platform implementation such as ESPressio-ESP32.
-- Existing memory-policy semantics remain preserved.
-
-## Auditing and testing
-
-The four existing tests were semantically reviewed for this change: device scalar identity, allocator/provider pairing, platform abstractions and provider publication remain valid. Runtime identity tests add invalid/unavailable, install-once, final-incarnation value and concurrent whole-value publication coverage.
-
-## Cooperative execution completion
-
-Persistent discrete-work owners use `IExecutionProvider::CreateJoinable` and `Join`.
-The provider retains execution/completion resources until the entry returns and its
-single external owner joins. No forceful cancellation occurs. Providers without
-this capability return `Unsupported`; callers must not substitute `Destroy`.
-Completion control storage is part of the declared platform execution resource cost.
-
-```cpp
-#include <ESPressio_Execution.hpp>
-void RunJoinedWork() {
-    using namespace ESPressio::System::Execution;
-    int result = 0;
-    auto& provider = Provider(); // installation stays fixed for this context's lifetime
-    auto created = provider.CreateJoinable(
-        [](void* context) { *static_cast<int*>(context) = 42; }, &result, {});
-    if (created) {
-        const auto joined = provider.Join(created.Handle);
-        // On success, result == 42 and the provider has released the context.
-        (void)joined;
-    }
-}
-```
-
-The caller context must remain alive until a successful join. Self-join is invalid.
-The Task T1 worker supplies executable host coverage with a controllable joinable
-provider; ESP32's concrete implementation belongs to the platform migration.
+Those former System abstractions are intentionally absent from this baseline.
