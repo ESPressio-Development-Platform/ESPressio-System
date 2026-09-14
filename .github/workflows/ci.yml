@@ -6,6 +6,7 @@ on:
       - main
       - primitives_redesign
       - composition_framework
+      - ota_v1
       - 'feature/**'
       - 'optimisation/**'
   pull_request:
@@ -42,6 +43,10 @@ jobs:
           ./runtime_identity_test
           g++ -std=c++17 -Wall -Wextra -Werror -pthread -Isrc tests/runtime_identity_concurrency_test.cpp -o runtime_identity_concurrency_test
           ./runtime_identity_concurrency_test
+      - name: Build and run memory policy contracts without C++ exceptions
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Isrc tests/memory_noexceptions_test.cpp -o memory_noexceptions_test
+          ./memory_noexceptions_test
       - name: Build and run Composition Framework contract
         run: |
           g++ -std=c++17 -Wall -Wextra -Werror -pedantic -fno-rtti -fno-exceptions -Isrc tests/composition_framework_test.cpp -o composition_framework_test
