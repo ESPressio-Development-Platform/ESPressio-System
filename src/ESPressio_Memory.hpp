@@ -154,7 +154,17 @@ template<typename U> struct rebind { using other = Allocator<U, Policy>; };
 
     /// <summary>Allocates storage for the requested number of elements.</summary>
     T* allocate(std::size_t count) {
-        if (count > static_cast<std::size_t>(-1) / sizeof(T)) throw std::bad_array_new_length();
+        if (count > static_cast<std::size_t>(-1) / sizeof(T)) {
+#if defined(__cpp_exceptions) || defined(__EXCEPTIONS)
+            throw std::bad_array_new_length();
+#else
+            // A standard allocator cannot report this failure with a nullable
+            // return value. In exception-disabled builds, terminate rather than
+            // making the allocator contract itself uncompilable or overflowing
+            // the byte-count multiplication below.
+            std::abort();
+#endif
+        }
         IMemoryProvider* provider = BindProvider();
         return static_cast<T*>(provider->Allocate(count * sizeof(T), alignof(T), Policy));
     }
@@ -234,6 +244,7 @@ UniquePtr<T, P> MakeUnique(Args&&... args) {
     static_assert(!std::is_array_v<T>, "ESPressio MakeUnique currently supports object types, not arrays.");
     IMemoryProvider& provider = GetProvider();
     void* storage = provider.Allocate(sizeof(T), alignof(T), P);
+#if defined(__cpp_exceptions) || defined(__EXCEPTIONS)
     try {
         T* object = ::new (storage) T(std::forward<Args>(args)...);
         return UniquePtr<T, P>(object, ObjectDeleter<T, P>(provider));
@@ -241,6 +252,10 @@ UniquePtr<T, P> MakeUnique(Args&&... args) {
         provider.Deallocate(storage, sizeof(T), alignof(T), P);
         throw;
     }
+#else
+    T* object = ::new (storage) T(std::forward<Args>(args)...);
+    return UniquePtr<T, P>(object, ObjectDeleter<T, P>(provider));
+#endif
 }
 
 /// <summary>Shared ownership type used by ESPressio components.</summary>
