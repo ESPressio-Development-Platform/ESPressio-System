@@ -97,7 +97,9 @@ PolymorphicUniquePtr<TBase> MakePolymorphicUnique(Args&&... args) {
         P
     );
 
+#if defined(__cpp_exceptions) || defined(__EXCEPTIONS)
     try {
+#endif
         TDerived* derived = ::new (storage) TDerived(
             std::forward<Args>(args)...
         );
@@ -109,6 +111,7 @@ PolymorphicUniquePtr<TBase> MakePolymorphicUnique(Args&&... args) {
                 &Detail::DestroyPolymorphicObject<TBase, TDerived, P>
             )
         );
+#if defined(__cpp_exceptions) || defined(__EXCEPTIONS)
     } catch (...) {
         provider.Deallocate(
             storage,
@@ -118,6 +121,7 @@ PolymorphicUniquePtr<TBase> MakePolymorphicUnique(Args&&... args) {
         );
         throw;
     }
+#endif
 }
 
 } // namespace ESPressio::System::Memory
